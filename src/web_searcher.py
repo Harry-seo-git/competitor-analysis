@@ -190,6 +190,7 @@ def fetch_page_content(url: str, max_length: int = 5000) -> dict:
 SKIP_DOMAINS = [
     "reddit.com", "facebook.com", "instagram.com", "tiktok.com",
     "twitter.com", "x.com", "linkedin.com", "threads.com",
+    "tesztevok.hu", "appbrain.com", "cybernews.com", "kkday.com",
 ]
 
 
