@@ -107,11 +107,20 @@ def generate_suggestions(all_analyses: list[dict]) -> list[dict]:
         analyses_text += f"\n### {a['name']}\n"
         analyses_text += f"요약: {a.get('summary', '정보 없음')}\n"
         for change in a.get("ux_changes", []):
-            analyses_text += f"- [UX] {change['title']}: {change['description']}\n"
+            if isinstance(change, dict):
+                analyses_text += f"- [UX] {change.get('title', '')}: {change.get('description', '')}\n"
+            elif isinstance(change, str):
+                analyses_text += f"- [UX] {change}\n"
         for feat in a.get("new_features", []):
-            analyses_text += f"- [기능] {feat['title']}: {feat['description']}\n"
+            if isinstance(feat, dict):
+                analyses_text += f"- [기능] {feat.get('title', '')}: {feat.get('description', '')}\n"
+            elif isinstance(feat, str):
+                analyses_text += f"- [기능] {feat}\n"
         for price in a.get("pricing", []):
-            analyses_text += f"- [요금] {price['title']}: {price['description']}\n"
+            if isinstance(price, dict):
+                analyses_text += f"- [요금] {price.get('title', '')}: {price.get('description', '')}\n"
+            elif isinstance(price, str):
+                analyses_text += f"- [요금] {price}\n"
 
     if not analyses_text.strip() or all(a.get("summary", "") == "이번 주 특이사항 없음" for a in all_analyses):
         return [{"priority": "낮음", "category": "모니터링", "action": "이번 주 특별한 경쟁사 동향이 감지되지 않았습니다. 정기적인 모니터링을 계속하세요.", "reason": "탐지된 변화 없음"}]
@@ -138,6 +147,7 @@ def _analyze_with_claude(prompt: str, competitor_name: str) -> dict:
     parsed = _parse_json_response(result)
     if parsed:
         parsed["name"] = competitor_name
+        _normalize_analysis(parsed)
         return parsed
     return _empty_analysis(competitor_name)
 
@@ -175,6 +185,7 @@ def _analyze_with_gemini(prompt: str, competitor_name: str) -> dict:
     parsed = _parse_json_response(result)
     if parsed:
         parsed["name"] = competitor_name
+        _normalize_analysis(parsed)
         return parsed
     return _empty_analysis(competitor_name)
 
@@ -331,6 +342,28 @@ def _fallback_suggestions(all_analyses: list[dict]) -> list[dict]:
 # ──────────────────────────────────────────────
 # 유틸리티
 # ──────────────────────────────────────────────
+
+def _normalize_analysis(analysis: dict) -> None:
+    """LLM 응답의 각 리스트 항목이 dict 형태인지 보장합니다."""
+    list_keys = ["ux_changes", "new_features", "pricing", "other"]
+    for key in list_keys:
+        items = analysis.get(key, [])
+        if not isinstance(items, list):
+            analysis[key] = []
+            continue
+        normalized = []
+        for item in items:
+            if isinstance(item, dict):
+                normalized.append(item)
+            elif isinstance(item, str):
+                normalized.append({
+                    "title": item[:100],
+                    "description": item,
+                    "impact": "",
+                    "source_url": "",
+                })
+        analysis[key] = normalized
+
 
 def _format_search_data(search_results: list[dict], page_contents: list[dict]) -> str:
     """검색 결과와 페이지 내용을 LLM 프롬프트용 텍스트로 포맷합니다."""
