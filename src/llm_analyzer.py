@@ -178,31 +178,46 @@ def _analyze_with_gemini(prompt: str, competitor_name: str) -> dict:
     return _empty_analysis(competitor_name)
 
 
-def _call_gemini(prompt: str) -> str:
-    try:
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
-        )
-        resp = requests.post(
-            url,
-            headers={"Content-Type": "application/json"},
-            json={
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.3,
-                    "maxOutputTokens": 2000,
-                    "responseMimeType": "application/json",
-                },
-            },
-            timeout=60,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        return data["candidates"][0]["content"]["parts"][0]["text"]
-    except Exception as e:
-        logger.error(f"Gemini API 호출 실패: {e}")
-        return ""
+def _call_gemini(prompt: str, max_retries: int = 3) -> str:
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    )
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0.3,
+            "maxOutputTokens": 2000,
+            "responseMimeType": "application/json",
+        },
+    }
+
+    for attempt in range(max_retries):
+        try:
+            resp = requests.post(
+                url,
+                headers={"Content-Type": "application/json"},
+                json=payload,
+                timeout=60,
+            )
+            if resp.status_code == 429:
+                wait = 2 ** (attempt + 1)  # 2s, 4s, 8s
+                logger.warning(f"Gemini 429 rate limit. {wait}초 대기 후 재시도 ({attempt + 1}/{max_retries})")
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            data = resp.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"]
+        except requests.exceptions.HTTPError as e:
+            if resp.status_code == 429 and attempt < max_retries - 1:
+                continue
+            logger.error(f"Gemini API 호출 실패: {e}")
+            return ""
+        except Exception as e:
+            logger.error(f"Gemini API 호출 실패: {e}")
+            return ""
+    logger.error("Gemini API 최대 재시도 초과")
+    return ""
 
 
 # ──────────────────────────────────────────────

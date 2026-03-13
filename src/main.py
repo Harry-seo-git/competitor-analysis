@@ -3,6 +3,7 @@
 import argparse
 import logging
 import sys
+import time
 from pathlib import Path
 
 # 프로젝트 루트 디렉토리 기준으로 경로 설정
@@ -53,6 +54,10 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
         analysis = analyze_competitor(comp["name"], search_results, page_contents)
         analysis["region"] = comp["region"]
         all_analyses.append(analysis)
+
+        # Gemini 무료 티어 rate limit 방지 (분당 15회)
+        if backend in ("gemini", "claude"):
+            time.sleep(5)
 
     # 3. 전략 제안 생성
     suggestions = generate_suggestions(all_analyses)

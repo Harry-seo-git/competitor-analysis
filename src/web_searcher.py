@@ -186,16 +186,32 @@ def fetch_page_content(url: str, max_length: int = 5000) -> dict:
         return {"url": url, "title": "", "content": ""}
 
 
+# 스크래핑이 차단되거나 유용하지 않은 도메인
+SKIP_DOMAINS = [
+    "reddit.com", "facebook.com", "instagram.com", "tiktok.com",
+    "twitter.com", "x.com", "linkedin.com", "threads.com",
+]
+
+
+def _should_skip_url(url: str) -> bool:
+    """스크래핑이 차단되는 도메인인지 확인합니다."""
+    return any(domain in url for domain in SKIP_DOMAINS)
+
+
 def fetch_pages_for_results(search_results: list[dict], max_pages: int = 5) -> list[dict]:
     """검색 결과 중 상위 N개의 페이지 본문을 가져옵니다."""
     pages = []
-    for result in search_results[:max_pages]:
+    fetched = 0
+    for result in search_results:
+        if fetched >= max_pages:
+            break
         url = result.get("url", "")
-        if not url:
+        if not url or _should_skip_url(url):
             continue
         logger.info(f"    페이지 수집: {url[:80]}...")
         page = fetch_page_content(url)
         if page["content"]:
             pages.append(page)
+            fetched += 1
         time.sleep(0.5)
     return pages
