@@ -11,13 +11,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from config_loader import get_all_competitors, load_config
-from report_generator import (
-    analyze_competitor_results,
-    generate_report,
-    save_report,
-)
+from llm_analyzer import analyze_competitor, generate_suggestions, get_active_backend
+from report_generator import generate_report, save_report
 from slack_notifier import send_to_slack
-from web_searcher import search_competitor
+from web_searcher import fetch_pages_for_results, search_competitor
 
 logging.basicConfig(
     level=logging.INFO,
@@ -35,26 +32,38 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
         config_path = str(PROJECT_ROOT / "config.yaml")
     config = load_config(config_path)
     competitors = get_all_competitors(config)
-    logger.info(f"분석 대상 경쟁사: {len(competitors)}개")
 
-    # 2. 경쟁사별 웹 검색 및 분석
+    backend = get_active_backend()
+    logger.info(f"분석 대상 경쟁사: {len(competitors)}개 | 분석 엔진: {backend}")
+
+    # 2. 경쟁사별 웹 검색 → 페이지 수집 → LLM 분석
     all_analyses = []
     for comp in competitors:
-        logger.info(f"검색 중: {comp['name']} ({comp['region']})")
-        search_results = search_competitor(comp)
-        logger.info(f"  - {len(search_results)}개 검색 결과 수집")
+        logger.info(f"[{comp['name']}] 검색 중...")
 
-        analysis = analyze_competitor_results(comp, search_results)
+        # 웹 검색
+        search_results = search_competitor(comp)
+        logger.info(f"  검색 결과: {len(search_results)}건")
+
+        # 상위 결과의 페이지 본문 수집
+        page_contents = fetch_pages_for_results(search_results, max_pages=3)
+        logger.info(f"  페이지 수집: {len(page_contents)}건")
+
+        # LLM 분석 (또는 키워드 폴백)
+        analysis = analyze_competitor(comp["name"], search_results, page_contents)
         analysis["region"] = comp["region"]
         all_analyses.append(analysis)
 
-    # 3. 리포트 생성 (프로젝트 루트의 reports/ 디렉토리에 저장)
-    report = generate_report(all_analyses, config)
+    # 3. 전략 제안 생성
+    suggestions = generate_suggestions(all_analyses)
+
+    # 4. 리포트 생성
+    report = generate_report(all_analyses, suggestions, backend)
     reports_dir = str(PROJECT_ROOT / "reports")
     report_path = save_report(report, output_dir=reports_dir)
     logger.info(f"리포트 생성 완료: {report_path}")
 
-    # 4. Slack 전송
+    # 5. Slack 전송
     if not skip_slack:
         success = send_to_slack(report)
         if success:

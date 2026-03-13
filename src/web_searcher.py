@@ -158,7 +158,7 @@ def _search_with_scraping(query: str, days_back: int) -> list[dict]:
         return []
 
 
-def fetch_page_content(url: str, max_length: int = 5000) -> str:
+def fetch_page_content(url: str, max_length: int = 5000) -> dict:
     """웹페이지의 본문 텍스트를 가져옵니다."""
     try:
         headers = {
@@ -173,12 +173,29 @@ def fetch_page_content(url: str, max_length: int = 5000) -> str:
 
         soup = BeautifulSoup(resp.text, "html.parser")
 
+        title = soup.title.get_text(strip=True) if soup.title else ""
+
         # 불필요한 태그 제거
         for tag in soup(["script", "style", "nav", "footer", "header"]):
             tag.decompose()
 
         text = soup.get_text(separator="\n", strip=True)
-        return text[:max_length]
+        return {"url": url, "title": title, "content": text[:max_length]}
     except Exception as e:
         logger.error(f"페이지 콘텐츠 가져오기 실패 ({url}): {e}")
-        return ""
+        return {"url": url, "title": "", "content": ""}
+
+
+def fetch_pages_for_results(search_results: list[dict], max_pages: int = 5) -> list[dict]:
+    """검색 결과 중 상위 N개의 페이지 본문을 가져옵니다."""
+    pages = []
+    for result in search_results[:max_pages]:
+        url = result.get("url", "")
+        if not url:
+            continue
+        logger.info(f"    페이지 수집: {url[:80]}...")
+        page = fetch_page_content(url)
+        if page["content"]:
+            pages.append(page)
+        time.sleep(0.5)
+    return pages
