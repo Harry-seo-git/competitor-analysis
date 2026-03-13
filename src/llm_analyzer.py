@@ -135,7 +135,10 @@ def generate_suggestions(all_analyses: list[dict]) -> list[dict]:
         return _fallback_suggestions(all_analyses)
 
     parsed = _parse_json_response(result)
-    return parsed.get("suggestions", _fallback_suggestions(all_analyses))
+    suggestions = parsed.get("suggestions", _fallback_suggestions(all_analyses))
+    if not isinstance(suggestions, list):
+        return _fallback_suggestions(all_analyses)
+    return suggestions
 
 
 # ──────────────────────────────────────────────

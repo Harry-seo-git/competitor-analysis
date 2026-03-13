@@ -127,7 +127,8 @@ def generate_report(all_analyses: list[dict], suggestions: list[dict], backend: 
     all_ux_changes = []
     for a in all_analyses:
         for change in a.get("ux_changes", []):
-            all_ux_changes.append({"competitor": a["name"], **change})
+            entry = {**change, "competitor": a["name"]}
+            all_ux_changes.append(entry)
 
     # 카테고리별 카운트
     def count_items(comps, key):

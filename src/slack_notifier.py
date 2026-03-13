@@ -1,6 +1,5 @@
 """Slack 웹훅을 통한 리포트 전송 모듈"""
 
-import json
 import logging
 import os
 
@@ -19,7 +18,7 @@ def send_to_slack(report: str, webhook_url: str = None) -> bool:
         return False
 
     # Slack 메시지 길이 제한 (약 40,000자)으로 분할 전송
-    chunks = _split_report(report, max_length=3000)
+    chunks = _split_report(report)
 
     for i, chunk in enumerate(chunks):
         payload = _build_slack_payload(chunk, part=i + 1, total=len(chunks))
