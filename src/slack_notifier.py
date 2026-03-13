@@ -206,7 +206,11 @@ def _build_suggestions_message(suggestions: list[dict]) -> dict:
 
     blocks.append(_divider())
     blocks.append(_context(
-        f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M')} 자동 생성  |  상세 내용은 리포트 파일을 확인하세요."
+        f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M')} 자동 생성"
+    ))
+    blocks.append(_context(
+        "⚠️ 본 리포트는 AI 기반 자동 분석 결과로, 부정확하거나 누락된 정보가 포함될 수 있습니다. "
+        "주요 내용은 원문 링크를 통해 반드시 확인해 주세요."
     ))
 
     return {"blocks": blocks}
