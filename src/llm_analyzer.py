@@ -38,13 +38,13 @@ ANALYSIS_PROMPT = """당신은 eSIM/로밍 서비스 시장의 전문 UX 분석�
 - 해당 정보가 없으면 "변경사항 없음"으로 표시
 
 반드시 아래 JSON 형식으로만 응답하세요:
-{
-  "ux_changes": [{"title": "변경 제목", "description": "구체적 설명", "impact": "유심사 시사점", "source_url": "출처 URL"}],
-  "new_features": [{"title": "기능명", "description": "설명", "impact": "시사점", "source_url": "URL"}],
-  "pricing": [{"title": "변경 내용", "description": "설명", "impact": "시사점", "source_url": "URL"}],
-  "other": [{"title": "제목", "description": "설명", "impact": "시사점", "source_url": "URL"}],
+{{
+  "ux_changes": [{{"title": "변경 제목", "description": "구체적 설명", "impact": "유심사 시사점", "source_url": "출처 URL"}}],
+  "new_features": [{{"title": "기능명", "description": "설명", "impact": "시사점", "source_url": "URL"}}],
+  "pricing": [{{"title": "변경 내용", "description": "설명", "impact": "시사점", "source_url": "URL"}}],
+  "other": [{{"title": "제목", "description": "설명", "impact": "시사점", "source_url": "URL"}}],
   "summary": "이 경쟁사의 이번 주 핵심 동향 1-2줄 요약"
-}
+}}
 """
 
 SUGGESTION_PROMPT = """당신은 '유심사'의 전략 컨설턴트입니다.
@@ -56,11 +56,11 @@ SUGGESTION_PROMPT = """당신은 '유심사'의 전략 컨설턴트입니다.
 각 제안은 실행 가능하고 구체적이어야 합니다.
 
 반드시 아래 JSON 형식으로만 응답하세요:
-{
+{{
   "suggestions": [
-    {"priority": "높음/중간/낮음", "category": "UX/기능/요금/마케팅", "action": "구체적 제안 내용", "reason": "근거"}
+    {{"priority": "높음/중간/낮음", "category": "UX/기능/요금/마케팅", "action": "구체적 제안 내용", "reason": "근거"}}
   ]
-}
+}}
 """
 
 
