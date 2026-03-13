@@ -5,6 +5,11 @@ import logging
 import sys
 from pathlib import Path
 
+# 프로젝트 루트 디렉토리 기준으로 경로 설정
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from config_loader import get_all_competitors, load_config
 from report_generator import (
     analyze_competitor_results,
@@ -26,6 +31,8 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
     logger.info("=== 유심사 경쟁사 분석 시작 ===")
 
     # 1. 설정 로드
+    if config_path is None:
+        config_path = str(PROJECT_ROOT / "config.yaml")
     config = load_config(config_path)
     competitors = get_all_competitors(config)
     logger.info(f"분석 대상 경쟁사: {len(competitors)}개")
@@ -41,9 +48,10 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
         analysis["region"] = comp["region"]
         all_analyses.append(analysis)
 
-    # 3. 리포트 생성
+    # 3. 리포트 생성 (프로젝트 루트의 reports/ 디렉토리에 저장)
     report = generate_report(all_analyses, config)
-    report_path = save_report(report)
+    reports_dir = str(PROJECT_ROOT / "reports")
+    report_path = save_report(report, output_dir=reports_dir)
     logger.info(f"리포트 생성 완료: {report_path}")
 
     # 4. Slack 전송
