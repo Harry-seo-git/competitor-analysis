@@ -65,12 +65,13 @@ SUGGESTION_PROMPT = """당신은 '유심사'의 전략 컨설턴트입니다.
 
 
 def get_active_backend() -> str:
-    """사용 가능한 LLM 백엔드를 확인합니다."""
+    """사용 가능한 LLM 백엔드를 확인합니다. Claude 우선."""
     if ANTHROPIC_API_KEY:
         return "claude"
     elif GEMINI_API_KEY:
         return "gemini"
     else:
+        logger.warning("LLM API 키 미설정. 키워드 기반 폴백으로 동작합니다.")
         return "fallback"
 
 
