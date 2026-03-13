@@ -178,7 +178,7 @@ def _analyze_with_gemini(prompt: str, competitor_name: str) -> dict:
     return _empty_analysis(competitor_name)
 
 
-def _call_gemini(prompt: str, max_retries: int = 3) -> str:
+def _call_gemini(prompt: str, max_retries: int = 4) -> str:
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
         f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
@@ -192,6 +192,9 @@ def _call_gemini(prompt: str, max_retries: int = 3) -> str:
         },
     }
 
+    # Gemini 무료 티어: 분당 15회. 429 시 충분히 대기해야 함
+    retry_waits = [15, 30, 45, 60]
+
     for attempt in range(max_retries):
         try:
             resp = requests.post(
@@ -201,7 +204,7 @@ def _call_gemini(prompt: str, max_retries: int = 3) -> str:
                 timeout=60,
             )
             if resp.status_code == 429:
-                wait = 2 ** (attempt + 1)  # 2s, 4s, 8s
+                wait = retry_waits[attempt]
                 logger.warning(f"Gemini 429 rate limit. {wait}초 대기 후 재시도 ({attempt + 1}/{max_retries})")
                 time.sleep(wait)
                 continue

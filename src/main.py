@@ -56,8 +56,10 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
         all_analyses.append(analysis)
 
         # Gemini 무료 티어 rate limit 방지 (분당 15회)
-        if backend in ("gemini", "claude"):
-            time.sleep(5)
+        if backend == "gemini":
+            time.sleep(10)
+        elif backend == "claude":
+            time.sleep(3)
 
     # 3. 전략 제안 생성
     suggestions = generate_suggestions(all_analyses)
