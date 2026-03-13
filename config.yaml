@@ -6,19 +6,16 @@ company:
 competitors:
   domestic:
     - name: "로밍도깨비"
-      url: "https://www.roamingdokkaebi.com"
+      url: "https://www.rokebi.com/"
       keywords: ["로밍도깨비 eSIM", "로밍도깨비 업데이트", "로밍도깨비 UX"]
     - name: "도시락eSIM"
       url: "https://www.dosirakesim.com"
       keywords: ["도시락eSIM 업데이트", "도시락eSIM UX", "도시락이심"]
-    - name: "flit eSIM"
-      url: "https://www.flitesim.com"
-      keywords: ["flit eSIM 업데이트", "flit eSIM UX", "플릿이심"]
-    - name: "말톡"
-      url: "https://www.maltalk.com"
-      keywords: ["말톡 eSIM", "말톡 업데이트", "말톡 로밍"]
+    - name: "플릿"
+      url: "https://flitmobile.com/"
+      keywords: ["플릿 eSIM 업데이트", "플릿 eSIM UX", "플릿이심"]
     - name: "이심이지"
-      url: "https://www.esimeasy.com"
+      url: "https://esimeasy.co.kr/"
       keywords: ["이심이지 업데이트", "이심이지 UX", "esimeasy"]
 
   international:
@@ -26,13 +23,13 @@ competitors:
       url: "https://saily.com"
       keywords: ["Saily eSIM update", "Saily UX changes", "Saily new feature"]
     - name: "Holafly"
-      url: "https://www.holafly.com"
+      url: "https://esim.holafly.com"
       keywords: ["Holafly update", "Holafly UX", "Holafly new feature"]
     - name: "Airalo"
       url: "https://www.airalo.com"
       keywords: ["Airalo update", "Airalo UX", "Airalo new feature"]
     - name: "Nomad"
-      url: "https://www.getnomad.app"
+      url: "https://www.nomadesim.com/"
       keywords: ["Nomad eSIM update", "Nomad eSIM UX", "Nomad eSIM new feature"]
 
 analysis:
