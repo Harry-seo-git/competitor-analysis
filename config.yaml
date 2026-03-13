@@ -14,9 +14,6 @@ competitors:
     - name: "flit eSIM"
       url: "https://www.flitesim.com"
       keywords: ["flit eSIM 업데이트", "flit eSIM UX", "플릿이심"]
-    - name: "핀다이렉트"
-      url: "https://www.findirect.com"
-      keywords: ["핀다이렉트 eSIM", "핀다이렉트 업데이트", "핀다이렉트 UX"]
     - name: "말톡"
       url: "https://www.maltalk.com"
       keywords: ["말톡 eSIM", "말톡 업데이트", "말톡 로밍"]
@@ -28,9 +25,6 @@ competitors:
     - name: "Saily"
       url: "https://saily.com"
       keywords: ["Saily eSIM update", "Saily UX changes", "Saily new feature"]
-    - name: "aloSIM"
-      url: "https://alosim.com"
-      keywords: ["aloSIM update", "aloSIM UX", "aloSIM new feature"]
     - name: "Holafly"
       url: "https://www.holafly.com"
       keywords: ["Holafly update", "Holafly UX", "Holafly new feature"]
