@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from config_loader import get_all_competitors, load_config
 from llm_analyzer import analyze_competitor, generate_suggestions, get_active_backend
 from report_generator import generate_report, save_report
-from slack_notifier import send_to_slack
+from slack_notifier import send_report_to_slack
 from web_searcher import fetch_pages_for_results, search_competitor
 
 logging.basicConfig(
@@ -72,7 +72,7 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
 
     # 5. Slack 전송
     if not skip_slack:
-        success = send_to_slack(report)
+        success = send_report_to_slack(all_analyses, suggestions, backend)
         if success:
             logger.info("Slack 전송 성공")
         else:
