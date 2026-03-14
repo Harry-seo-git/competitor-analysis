@@ -48,8 +48,18 @@ ANALYSIS_PROMPT = """당신은 eSIM/로밍 서비스 시장의 전문 UX 분석�
   "new_features": [{{"title": "기능명", "description": "설명", "impact": "시사점", "source_url": "URL"}}],
   "pricing": [{{"title": "변경 내용", "description": "설명", "impact": "시사점", "source_url": "URL"}}],
   "other": [{{"title": "제목", "description": "설명", "impact": "시사점", "source_url": "URL"}}],
+  "threat_score": {{
+    "score": 1~10,
+    "level": "높음/중간/낮음",
+    "reason": "위협도 판단 근거 1줄"
+  }},
   "summary": "이 경쟁사의 이번 주 핵심 동향 1-2줄 요약"
 }}
+
+threat_score 기준:
+- 높음(7-10): 요금 인하, 대규모 UX 개편, 유심사 직접 경쟁 기능 출시
+- 중간(4-6): 신기능 출시, 일부 UI 변경, 프로모션
+- 낮음(1-3): 경미한 변경, 특이사항 없음
 """
 
 SUGGESTION_PROMPT = """당신은 '유심사'의 전략 컨설턴트입니다.

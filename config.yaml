@@ -7,29 +7,45 @@ competitors:
   domestic:
     - name: "로밍도깨비"
       url: "https://www.rokebi.com/"
+      app_store: "https://apps.apple.com/kr/app/id1525664178"
+      play_store: "https://play.google.com/store/apps/details?id=com.rokebiesim"
       keywords: ["로밍도깨비 eSIM", "로밍도깨비 업데이트", "로밍도깨비 UX"]
     - name: "도시락eSIM"
       url: "https://www.dosirakesim.com"
+      app_store: "https://apps.apple.com/kr/app/id1620488208"
+      play_store: "https://play.google.com/store/apps/details?id=com.dosirakesim.mobileapp"
       keywords: ["도시락eSIM 업데이트", "도시락eSIM UX", "도시락eSIM 로밍"]
     - name: "플릿"
       url: "https://flitmobile.com/"
+      app_store: "https://apps.apple.com/kr/app/id1669672934"
+      play_store: "https://play.google.com/store/apps/details?id=com.flitmobile"
       keywords: ["플릿 eSIM 업데이트", "플릿 eSIM UX", "플릿이심"]
     - name: "이심이지"
       url: "https://esimeasy.co.kr/"
+      app_store: "https://apps.apple.com/kr/app/id1628484156"
+      play_store: "https://play.google.com/store/apps/details?id=com.baycon.android.esim"
       keywords: ["이심이지 eSIM", "이심이지 업데이트", "esimeasy eSIM"]
 
   international:
     - name: "Saily"
       url: "https://saily.com"
+      app_store: "https://apps.apple.com/us/app/id6475045151"
+      play_store: "https://play.google.com/store/apps/details?id=com.saily.android"
       keywords: ["Saily eSIM update", "Saily UX changes", "Saily new feature"]
     - name: "Holafly"
       url: "https://esim.holafly.com"
+      app_store: "https://apps.apple.com/us/app/id1629600786"
+      play_store: "https://play.google.com/store/apps/details?id=com.holafly.holafly"
       keywords: ["Holafly update", "Holafly UX", "Holafly new feature"]
     - name: "Airalo"
       url: "https://www.airalo.com"
+      app_store: "https://apps.apple.com/us/app/id1475911720"
+      play_store: "https://play.google.com/store/apps/details?id=com.mobillium.airalo"
       keywords: ["Airalo update", "Airalo UX", "Airalo new feature"]
     - name: "Nomad"
       url: "https://www.nomadesim.com/"
+      app_store: "https://apps.apple.com/us/app/id1521602300"
+      play_store: "https://play.google.com/store/apps/details?id=com.lotusflare.nomad.mobile.android"
       keywords: ["Nomad eSIM update", "Nomad eSIM UX", "Nomad eSIM new feature"]
 
 analysis:

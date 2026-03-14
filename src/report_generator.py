@@ -24,6 +24,36 @@ REPORT_TEMPLATE = """# 유심사 경쟁사 주간 분석 리포트
 
 ---
 
+## 전주 대비 트렌드
+
+{% if trend and trend.has_previous %}
+| 경쟁사 | 이번 주 | 지난 주 | 변화 |
+|--------|---------|---------|------|
+{% for name, t in trend.competitors.items() %}| {{ name }} | {{ t.current_total }}건 | {{ t.previous_total }}건 | {{ '+' if t.diff > 0 }}{{ t.diff }} |
+{% endfor %}
+
+> {{ trend.summary }}
+{% else %}
+첫 번째 분석입니다. 다음 주부터 트렌드가 표시됩니다.
+{% endif %}
+
+---
+
+## 앱 업데이트 현황
+
+{% for comp in all_analyses %}{% if comp.app_info %}
+### {{ comp.name }}
+| 플랫폼 | 버전 | 평점 | 업데이트일 |
+|--------|------|------|-----------|
+{% for app in comp.app_info %}| {{ app.platform }} | {{ app.version }} | {{ '%.1f'|format(app.rating) }} ({{ app.rating_count }}) | {{ app.updated[:10] }} |
+{% endfor %}
+{% if comp.app_info[0].release_notes %}
+> 릴리즈 노트: {{ comp.app_info[0].release_notes[:200] }}
+{% endif %}
+{% endif %}{% endfor %}
+
+---
+
 ## UX/UI 변경사항 하이라이트
 
 {% if all_ux_changes %}
@@ -111,11 +141,17 @@ REPORT_TEMPLATE = """# 유심사 경쟁사 주간 분석 리포트
 
 ---
 
-*이 리포트는 자동으로 생성되었습니다. 상세 내용은 원문 링크를 참고해주세요.*
+{% if pricing_table %}
+{{ pricing_table }}
+
+---
+
+{% endif %}
+*⚠️ 본 리포트는 AI 기반 자동 분석 결과로, 부정확하거나 누락된 정보가 포함될 수 있습니다. 주요 내용은 원문 링크를 통해 반드시 확인해 주세요.*
 """
 
 
-def generate_report(all_analyses: list[dict], suggestions: list[dict], backend: str) -> str:
+def generate_report(all_analyses: list[dict], suggestions: list[dict], backend: str, trend: dict = None, pricing_table: str = "") -> str:
     """LLM 분석 결과를 기반으로 최종 마크다운 리포트를 생성합니다."""
     now = datetime.now()
     week_ago = now - timedelta(days=7)
@@ -155,9 +191,12 @@ def generate_report(all_analyses: list[dict], suggestions: list[dict], backend: 
         intl_feat=count_items(international, "new_features"),
         intl_price=count_items(international, "pricing"),
         all_ux_changes=all_ux_changes,
+        all_analyses=all_analyses,
         domestic_competitors=domestic,
         international_competitors=international,
         suggestions=suggestions,
+        trend=trend or {},
+        pricing_table=pricing_table,
     )
 
     return report

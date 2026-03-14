@@ -19,6 +19,8 @@ def send_report_to_slack(
     suggestions: list[dict],
     backend: str,
     webhook_url: str = None,
+    trend: dict = None,
+    errors: list[dict] = None,
 ) -> bool:
     """구조화된 분석 데이터를 Slack Block Kit 메시지로 전송합니다."""
     url = webhook_url or SLACK_WEBHOOK_URL
@@ -34,21 +36,36 @@ def send_report_to_slack(
     # 메시지 1: 헤더 + 주간 요약
     messages.append(_build_summary_message(domestic, international, backend))
 
-    # 메시지 2: UX 하이라이트 (있을 때만)
+    # 메시지 2: 트렌드 비교 (이전 주 대비, 있을 때만)
+    if trend and trend.get("has_previous"):
+        trend_msg = _build_trend_message(trend)
+        if trend_msg:
+            messages.append(trend_msg)
+
+    # 메시지 3: UX 하이라이트 (있을 때만)
     ux_msg = _build_ux_highlight_message(all_analyses)
     if ux_msg:
         messages.append(ux_msg)
 
-    # 메시지 3: 국내 경쟁사 상세
+    # 메시지 4: 국내 경쟁사 상세
     if domestic:
         messages.append(_build_competitor_message("🇰🇷 국내 경쟁사 상세 분석", domestic))
 
-    # 메시지 4: 해외 경쟁사 상세
+    # 메시지 5: 해외 경쟁사 상세
     if international:
         messages.append(_build_competitor_message("🌏 해외 경쟁사 상세 분석", international))
 
-    # 메시지 5: 전략 제안
+    # 메시지 6: 앱 업데이트 현황
+    app_msg = _build_app_update_message(all_analyses)
+    if app_msg:
+        messages.append(app_msg)
+
+    # 메시지 7: 전략 제안
     messages.append(_build_suggestions_message(suggestions))
+
+    # 메시지 8: 분석 실패 알림 (에러가 있을 때만)
+    if errors:
+        messages.append(_build_error_message(errors))
 
     # 전송
     for i, payload in enumerate(messages):
@@ -153,8 +170,23 @@ def _build_competitor_message(title: str, competitors: list[dict]) -> dict:
         name = comp.get("name", "")
         summary = comp.get("summary", "특이사항 없음")
 
-        # 경쟁사 헤더 + 요약
-        comp_text = f"*{name}*\n> {summary}"
+        # 경쟁사 헤더 + 요약 + 링크
+        links = []
+        if comp.get("url"):
+            links.append(f"<{comp['url']}|웹>")
+        if comp.get("app_store"):
+            links.append(f"<{comp['app_store']}|iOS>")
+        if comp.get("play_store"):
+            links.append(f"<{comp['play_store']}|Android>")
+        link_text = f"  ({' · '.join(links)})" if links else ""
+
+        comp_text = f"*{name}*{link_text}\n> {summary}"
+
+        # 사이트 변경 감지 표시
+        site_changes = comp.get("site_changes", {})
+        if site_changes.get("has_changes"):
+            comp_text += f"\n🔄 _{site_changes.get('summary', '웹사이트 변경 감지')}_"
+
         blocks.append(_section(comp_text))
 
         # 카테고리별 변경사항
@@ -211,6 +243,104 @@ def _build_suggestions_message(suggestions: list[dict]) -> dict:
     blocks.append(_context(
         "⚠️ 본 리포트는 AI 기반 자동 분석 결과로, 부정확하거나 누락된 정보가 포함될 수 있습니다. "
         "주요 내용은 원문 링크를 통해 반드시 확인해 주세요."
+    ))
+
+    return {"blocks": blocks}
+
+
+def _build_trend_message(trend: dict) -> dict | None:
+    """이전 주 대비 트렌드 비교 메시지"""
+    competitors = trend.get("competitors", {})
+    if not competitors:
+        return None
+
+    direction_emoji = {"up": "📈", "down": "📉", "stable": "➡️"}
+
+    blocks = [
+        _header_block("📊 전주 대비 트렌드"),
+        _divider(),
+    ]
+
+    lines = []
+    for name, data in competitors.items():
+        emoji = direction_emoji.get(data.get("direction", "stable"), "➡️")
+        diff = data.get("diff", 0)
+        diff_text = f"+{diff}" if diff > 0 else str(diff)
+        curr = data.get("current_total", 0)
+        lines.append(f"{emoji} *{name}*: {curr}건 ({diff_text})")
+
+        # 앱 버전 변경
+        for vc in data.get("version_changes", []):
+            lines.append(f"    📱 {vc}")
+
+    blocks.append(_section("\n".join(lines)))
+
+    if trend.get("summary"):
+        blocks.append(_context(trend["summary"]))
+
+    return {"blocks": blocks}
+
+
+def _build_app_update_message(all_analyses: list[dict]) -> dict | None:
+    """앱 업데이트 현황 메시지"""
+    has_app_info = any(a.get("app_info") for a in all_analyses)
+    if not has_app_info:
+        return None
+
+    blocks = [
+        _header_block("📱 앱 업데이트 현황"),
+        _divider(),
+    ]
+
+    for a in all_analyses:
+        apps = a.get("app_info", [])
+        if not apps:
+            continue
+
+        lines = [f"*{a['name']}*"]
+        for app in apps:
+            platform = app.get("platform", "")
+            version = app.get("version", "N/A")
+            rating = app.get("rating", 0)
+            rating_count = app.get("rating_count", 0)
+            updated = app.get("updated", "")[:10]
+            url = app.get("url", "")
+
+            rating_str = f"⭐ {rating:.1f} ({rating_count:,})" if rating else "평점 없음"
+            platform_emoji = "🍎" if platform == "iOS" else "🤖"
+            link = f"<{url}|{platform}>" if url else platform
+
+            lines.append(f"  {platform_emoji} {link}: v{version} | {rating_str} | {updated}")
+
+            release_notes = app.get("release_notes", "")
+            if release_notes:
+                notes_preview = release_notes.replace("\n", " ")[:150]
+                lines.append(f"    📝 _{notes_preview}_")
+
+        blocks.append(_section("\n".join(lines)))
+
+    if len(blocks) <= 2:
+        return None
+
+    return {"blocks": blocks}
+
+
+def _build_error_message(errors: list[dict]) -> dict:
+    """분석 실패 알림 메시지"""
+    blocks = [
+        _header_block("⚠️ 분석 실패 알림"),
+        _divider(),
+    ]
+
+    lines = []
+    for err in errors:
+        name = err.get("name", "알 수 없음")
+        error = err.get("error", "")[:300]
+        lines.append(f"❌ *{name}*: {error}")
+
+    blocks.append(_section("\n".join(lines)))
+    blocks.append(_context(
+        "위 경쟁사의 분석이 실패했습니다. 네트워크 상태 또는 API 키를 확인해 주세요."
     ))
 
     return {"blocks": blocks}
