@@ -1,0 +1,18 @@
+{
+  "Nomad": [
+    {
+      "destination": "일본",
+      "data": "1GB당",
+      "duration": "",
+      "price": "0.78",
+      "currency": "USD"
+    },
+    {
+      "destination": "미국",
+      "data": "1GB당",
+      "duration": "",
+      "price": "0.54",
+      "currency": "USD"
+    }
+  ]
+}
