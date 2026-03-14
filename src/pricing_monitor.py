@@ -2,12 +2,15 @@
 
 경쟁사 웹사이트에서 요금제 정보를 크롤링하고 비교 테이블을 생성합니다.
 LLM을 활용하여 비정형 요금 정보를 구조화합니다.
+
+최적화: 경쟁사를 배치로 묶어 LLM 호출 횟수를 최소화합니다.
 """
 
 import json
 import logging
 import os
 import time
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -29,6 +32,13 @@ _HEADERS = {
 # 인기 여행지 (요금 비교 대상)
 POPULAR_DESTINATIONS = ["일본", "태국", "미국", "유럽", "베트남"]
 
+# 요금 관련 키워드 (이 키워드가 없으면 LLM 호출 스킵)
+_PRICING_KEYWORDS = [
+    "원", "₩", "$", "usd", "krw", "price", "pricing", "plan",
+    "요금", "가격", "데이터", "gb", "무제한", "unlimited",
+    "day", "일", "주", "week",
+]
+
 
 def fetch_pricing_page(url: str) -> str:
     """경쟁사 웹사이트에서 요금 관련 페이지 텍스트를 가져옵니다."""
@@ -46,120 +56,125 @@ def fetch_pricing_page(url: str) -> str:
         return ""
 
 
-def extract_pricing_with_llm(competitor_name: str, page_text: str) -> list[dict]:
-    """LLM을 사용하여 페이지 텍스트에서 요금제 정보를 추출합니다."""
-    has_llm = os.environ.get("GEMINI_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
-    if not has_llm or not page_text:
-        return []
+def _has_pricing_content(text: str) -> bool:
+    """페이지에 요금 관련 키워드가 있는지 확인합니다."""
+    text_lower = text.lower()
+    return sum(1 for kw in _PRICING_KEYWORDS if kw in text_lower) >= 3
 
-    prompt = f"""아래는 '{competitor_name}' eSIM 서비스의 웹페이지 텍스트입니다.
-이 텍스트에서 요금제 정보를 추출해주세요.
 
-## 페이지 텍스트
-{page_text[:5000]}
+def _extract_pricing_batch_with_claude(batch: dict[str, str]) -> dict[str, list[dict]]:
+    """여러 경쟁사의 요금 정보를 한 번의 API 호출로 추출합니다."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return {}
 
-## 추출 요청
-인기 여행지(일본, 태국, 미국, 유럽, 베트남)의 요금제를 찾아 아래 JSON 형식으로 응답하세요.
-해당 정보가 없으면 빈 배열을 반환하세요.
+    # 배치 프롬프트 조립
+    sections = []
+    for name, text in batch.items():
+        sections.append(f"### {name}\n{text[:3000]}")
+
+    combined_text = "\n\n---\n\n".join(sections)
+    competitor_names = ", ".join(batch.keys())
+
+    prompt = f"""아래는 여러 eSIM 서비스의 웹페이지 텍스트입니다.
+각 서비스에서 인기 여행지(일본, 태국, 미국, 유럽, 베트남)의 요금제 정보를 추출해주세요.
+해당 정보가 없는 서비스는 빈 배열로 반환하세요.
+
+## 서비스별 페이지 텍스트
+{combined_text}
 
 반드시 JSON만 응답하세요:
 {{
-  "plans": [
-    {{
-      "destination": "국가/지역명",
-      "data": "데이터 용량 (예: 1GB, 무제한)",
-      "duration": "사용 기간 (예: 3일, 7일, 30일)",
-      "price": "가격 (원화 또는 달러)",
-      "currency": "KRW 또는 USD"
-    }}
-  ]
+  {', '.join(f'"{name}": [{{"destination": "국가/지역명", "data": "용량", "duration": "기간", "price": "가격", "currency": "KRW/USD"}}]' for name in batch.keys())}
 }}"""
 
-    try:
-        if os.environ.get("GEMINI_API_KEY"):
-            return _extract_with_gemini(prompt)
-        else:
-            return _extract_with_claude(prompt)
-    except Exception as e:
-        logger.error(f"LLM 요금 추출 실패: {e}")
-        return []
-
-
-def _extract_with_gemini(prompt: str) -> list[dict]:
-    try:
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"gemini-2.0-flash:generateContent?key={os.environ['GEMINI_API_KEY']}"
-        )
-        resp = requests.post(
-            url,
-            headers={"Content-Type": "application/json"},
-            json={
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
-            },
-            timeout=60,
-        )
-        resp.raise_for_status()
-        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-        data = json.loads(text)
-        return data.get("plans", [])
-    except Exception as e:
-        logger.error(f"Gemini 요금 추출 실패: {e}")
-        return []
-
-
-def _extract_with_claude(prompt: str) -> list[dict]:
     try:
         resp = requests.post(
             "https://api.anthropic.com/v1/messages",
             headers={
-                "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+                "x-api-key": api_key,
                 "content-type": "application/json",
                 "anthropic-version": "2023-06-01",
             },
             json={
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 2048,
+                "max_tokens": 4096,
                 "messages": [{"role": "user", "content": prompt}],
             },
-            timeout=60,
+            timeout=120,
         )
         resp.raise_for_status()
         text = resp.json()["content"][0]["text"]
+
+        # JSON 파싱
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0]
-        data = json.loads(text.strip())
-        return data.get("plans", [])
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0]
+
+        try:
+            data = json.loads(text.strip())
+        except json.JSONDecodeError:
+            start = text.index("{")
+            end = text.rindex("}") + 1
+            data = json.loads(text[start:end])
+
+        # 결과 정리
+        result = {}
+        for name in batch.keys():
+            plans = data.get(name, [])
+            if isinstance(plans, list) and plans:
+                result[name] = plans
+        return result
+
     except Exception as e:
-        logger.error(f"Claude 요금 추출 실패: {e}")
-        return []
+        logger.error(f"Claude 요금 배치 추출 실패: {e}")
+        return {}
 
 
 def collect_pricing(competitors: list[dict]) -> dict[str, list[dict]]:
-    """모든 경쟁사의 요금제 정보를 수집합니다."""
-    all_pricing = {}
+    """모든 경쟁사의 요금제 정보를 수집합니다. 배치 처리로 API 호출을 최소화합니다."""
+    # 1단계: 페이지 수집 + 키워드 필터링
+    pages_with_pricing = {}
     for comp in competitors:
         name = comp.get("name", "")
         url = comp.get("url", "")
         if not url:
             continue
 
-        logger.info(f"[{name}] 요금제 정보 수집 중...")
+        logger.info(f"[{name}] 요금 페이지 수집 중...")
         page_text = fetch_pricing_page(url)
-        if page_text:
-            plans = extract_pricing_with_llm(name, page_text)
-            if plans:
-                all_pricing[name] = plans
-                logger.info(f"  {len(plans)}개 요금제 수집")
-            else:
-                logger.info(f"  요금제 정보 추출 실패")
+        if page_text and _has_pricing_content(page_text):
+            pages_with_pricing[name] = page_text
+            logger.info(f"  요금 키워드 감지 → LLM 분석 대상")
         else:
-            logger.info(f"  페이지 수집 실패")
+            logger.info(f"  요금 키워드 미감지 → 스킵")
+        time.sleep(1)
 
-        time.sleep(2)
+    if not pages_with_pricing:
+        logger.info("요금 정보가 있는 페이지가 없습니다.")
+        _save_pricing_data({})
+        return {}
 
-    # 요금 데이터 저장
+    # 2단계: 배치 LLM 호출 (4개씩 묶어서)
+    all_pricing = {}
+    batch_size = 4
+    names = list(pages_with_pricing.keys())
+
+    for i in range(0, len(names), batch_size):
+        batch_names = names[i:i + batch_size]
+        batch = {n: pages_with_pricing[n] for n in batch_names}
+
+        logger.info(f"요금 배치 추출: {', '.join(batch_names)}")
+        result = _extract_pricing_batch_with_claude(batch)
+        all_pricing.update(result)
+
+        if i + batch_size < len(names):
+            time.sleep(3)
+
+    for name, plans in all_pricing.items():
+        logger.info(f"  [{name}] {len(plans)}개 요금제 추출")
+
     _save_pricing_data(all_pricing)
     return all_pricing
 
@@ -167,7 +182,6 @@ def collect_pricing(competitors: list[dict]) -> dict[str, list[dict]]:
 def _save_pricing_data(pricing: dict) -> None:
     """요금 데이터를 파일로 저장합니다."""
     PRICING_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    from datetime import datetime
     filename = f"pricing_{datetime.now().strftime('%Y%m%d')}.json"
     filepath = PRICING_DATA_DIR / filename
     filepath.write_text(json.dumps(pricing, ensure_ascii=False, indent=2), encoding="utf-8")

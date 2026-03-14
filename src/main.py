@@ -84,11 +84,8 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
             logger.error(f"[{comp['name']}] 분석 실패: {e}")
             errors.append({"name": comp["name"], "error": str(e)})
 
-        # Gemini 무료 티어 rate limit 방지 (분당 15회)
-        if backend == "gemini":
-            time.sleep(10)
-        elif backend == "claude":
-            time.sleep(3)
+        # API rate limit 방지
+        time.sleep(3)
 
     # 5. 전략 제안 생성
     suggestions = generate_suggestions(all_analyses)

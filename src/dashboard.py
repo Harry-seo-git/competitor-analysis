@@ -302,7 +302,7 @@ def generate_dashboard(
     total_feat = sum(len(a.get("new_features", [])) for a in analyses)
     total_price = sum(len(a.get("pricing", [])) for a in analyses)
 
-    backend_labels = {"claude": "Claude API", "gemini": "Gemini", "fallback": "키워드 기반"}
+    backend_labels = {"claude": "Claude API", "fallback": "키워드 기반"}
 
     # 카드 생성
     cards_html = "\n".join(_build_competitor_card(a) for a in analyses)

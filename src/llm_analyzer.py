@@ -1,22 +1,19 @@
 """LLM 기반 경쟁사 분석 모듈
 
 지원 백엔드:
-  1. Claude API (ANTHROPIC_API_KEY) - 유료, 최고 품질
-  2. Google Gemini (GEMINI_API_KEY) - 무료 티어 제공, 우수 품질
-  3. 키워드 기반 폴백 - API 없이 동작
+  1. Claude API (ANTHROPIC_API_KEY) - 분석 엔진
+  2. 키워드 기반 폴백 - API 없이 동작
 """
 
 import json
 import logging
 import os
-import time
 
 import requests
 
 logger = logging.getLogger(__name__)
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 ANALYSIS_PROMPT = """당신은 eSIM/로밍 서비스 시장의 전문 UX 분석가입니다.
 아래는 '{competitor_name}' 경쟁사에 대한 최근 웹 검색 결과와 페이지 내용입니다.
@@ -80,13 +77,11 @@ SUGGESTION_PROMPT = """당신은 '유심사'의 전략 컨설턴트입니다.
 
 
 def get_active_backend() -> str:
-    """사용 가능한 LLM 백엔드를 확인합니다. Claude 우선."""
+    """사용 가능한 LLM 백엔드를 확인합니다."""
     if ANTHROPIC_API_KEY:
         return "claude"
-    elif GEMINI_API_KEY:
-        return "gemini"
     else:
-        logger.warning("LLM API 키 미설정. 키워드 기반 폴백으로 동작합니다.")
+        logger.warning("ANTHROPIC_API_KEY 미설정. 키워드 기반 폴백으로 동작합니다.")
         return "fallback"
 
 
@@ -107,8 +102,6 @@ def analyze_competitor(competitor_name: str, search_results: list[dict], page_co
 
     if backend == "claude":
         return _analyze_with_claude(prompt, competitor_name)
-    elif backend == "gemini":
-        return _analyze_with_gemini(prompt, competitor_name)
     else:
         return _analyze_with_fallback(competitor_name, search_results, page_contents)
 
@@ -144,8 +137,6 @@ def generate_suggestions(all_analyses: list[dict]) -> list[dict]:
 
     if backend == "claude":
         result = _call_claude(prompt)
-    elif backend == "gemini":
-        result = _call_gemini(prompt)
     else:
         return _fallback_suggestions(all_analyses)
 
@@ -181,7 +172,7 @@ def _call_claude(prompt: str) -> str:
             },
             json={
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 4096,
+                "max_tokens": 2048,
                 "messages": [{"role": "user", "content": prompt}],
             },
             timeout=90,
@@ -192,65 +183,6 @@ def _call_claude(prompt: str) -> str:
     except Exception as e:
         logger.error(f"Claude API 호출 실패: {e}")
         return ""
-
-
-# ──────────────────────────────────────────────
-# Google Gemini (무료)
-# ──────────────────────────────────────────────
-
-def _analyze_with_gemini(prompt: str, competitor_name: str) -> dict:
-    result = _call_gemini(prompt)
-    parsed = _parse_json_response(result)
-    if parsed:
-        parsed["name"] = competitor_name
-        _normalize_analysis(parsed)
-        return parsed
-    return _empty_analysis(competitor_name)
-
-
-def _call_gemini(prompt: str, max_retries: int = 4) -> str:
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
-    )
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.3,
-            "maxOutputTokens": 2000,
-            "responseMimeType": "application/json",
-        },
-    }
-
-    # Gemini 무료 티어: 분당 15회. 429 시 충분히 대기해야 함
-    retry_waits = [15, 30, 45, 60]
-
-    for attempt in range(max_retries):
-        try:
-            resp = requests.post(
-                url,
-                headers={"Content-Type": "application/json"},
-                json=payload,
-                timeout=60,
-            )
-            if resp.status_code == 429:
-                wait = retry_waits[attempt]
-                logger.warning(f"Gemini 429 rate limit. {wait}초 대기 후 재시도 ({attempt + 1}/{max_retries})")
-                time.sleep(wait)
-                continue
-            resp.raise_for_status()
-            data = resp.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        except requests.exceptions.HTTPError as e:
-            if resp.status_code == 429 and attempt < max_retries - 1:
-                continue
-            logger.error(f"Gemini API 호출 실패: {e}")
-            return ""
-        except Exception as e:
-            logger.error(f"Gemini API 호출 실패: {e}")
-            return ""
-    logger.error("Gemini API 최대 재시도 초과")
-    return ""
 
 
 # ──────────────────────────────────────────────
@@ -387,16 +319,16 @@ def _format_search_data(search_results: list[dict], page_contents: list[dict]) -
     """검색 결과와 페이지 내용을 LLM 프롬프트용 텍스트로 포맷합니다."""
     parts = []
 
-    for i, r in enumerate(search_results[:10], 1):
+    for i, r in enumerate(search_results[:5], 1):
         parts.append(f"### 검색 결과 {i}")
         parts.append(f"- 제목: {r['title']}")
         parts.append(f"- URL: {r['url']}")
         parts.append(f"- 요약: {r['snippet']}")
         parts.append("")
 
-    for p in page_contents[:5]:
+    for p in page_contents[:3]:
         parts.append(f"### 페이지 본문 ({p['url']})")
-        parts.append(p.get("content", "")[:3000])
+        parts.append(p.get("content", "")[:2000])
         parts.append("")
 
     return "\n".join(parts)

@@ -90,7 +90,6 @@ def _build_summary_message(domestic: list[dict], international: list[dict], back
 
     backend_labels = {
         "claude": "Claude API",
-        "gemini": "Gemini (무료)",
         "fallback": "키워드 기반",
     }
 

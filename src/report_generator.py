@@ -172,7 +172,6 @@ def generate_report(all_analyses: list[dict], suggestions: list[dict], backend: 
 
     backend_labels = {
         "claude": "Claude API (Anthropic)",
-        "gemini": "Google Gemini (무료)",
         "fallback": "키워드 기반 (LLM 미사용)",
     }
 
