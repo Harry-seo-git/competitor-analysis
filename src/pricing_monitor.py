@@ -52,7 +52,7 @@ def fetch_pricing_page(url: str) -> str:
 
         return soup.get_text(separator="\n", strip=True)[:8000]
     except requests.exceptions.HTTPError as e:
-        if resp.status_code == 403:
+        if e.response is not None and e.response.status_code == 403:
             logger.warning(f"요금 페이지 접근 차단 ({url}): 봇 접근이 제한된 사이트입니다.")
         else:
             logger.error(f"요금 페이지 수집 실패 ({url}): {e}")

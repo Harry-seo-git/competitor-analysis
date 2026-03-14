@@ -23,6 +23,14 @@ _HEADERS = {
 }
 
 
+def _safe_int(value, default: int = 0) -> int:
+    """안전한 정수 변환. 변환 실패 시 기본값 반환."""
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
 # ──────────────────────────────────────────────
 # iOS App Store (iTunes Lookup API)
 # ──────────────────────────────────────────────
@@ -161,7 +169,7 @@ def fetch_ios_reviews(app_store_url: str, max_reviews: int = 20) -> list[dict]:
             if isinstance(entry, dict) and "content" in entry:
                 reviews.append({
                     "author": entry.get("author", {}).get("name", {}).get("label", ""),
-                    "rating": int(entry.get("im:rating", {}).get("label", "0")),
+                    "rating": _safe_int(entry.get("im:rating", {}).get("label", "0")),
                     "title": entry.get("title", {}).get("label", ""),
                     "content": entry.get("content", {}).get("label", "")[:500],
                     "version": entry.get("im:version", {}).get("label", ""),
