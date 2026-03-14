@@ -183,12 +183,81 @@ def _save_pricing_data(pricing: dict) -> None:
     filepath.write_text(json.dumps(pricing, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def generate_comparison_table(pricing: dict[str, list[dict]]) -> str:
+def _load_previous_pricing() -> dict:
+    """가장 최근의 이전 요금 데이터를 로드합니다."""
+    if not PRICING_DATA_DIR.exists():
+        return {}
+    files = sorted(PRICING_DATA_DIR.glob("pricing_*.json"), reverse=True)
+    # 오늘 파일 제외, 그 이전 것 사용
+    today_prefix = f"pricing_{datetime.now().strftime('%Y%m%d')}"
+    for f in files:
+        if not f.stem.startswith(today_prefix):
+            try:
+                return json.loads(f.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, IOError):
+                continue
+    return {}
+
+
+def detect_pricing_changes(current: dict[str, list[dict]]) -> list[dict]:
+    """이전 주 대비 가격 변동을 감지합니다."""
+    previous = _load_previous_pricing()
+    if not previous or not current:
+        return []
+
+    changes = []
+    for comp_name, curr_plans in current.items():
+        prev_plans = previous.get(comp_name, [])
+        if not prev_plans:
+            continue
+
+        # 이전 요금 인덱싱: (destination, data, duration) → price
+        prev_index = {}
+        for p in prev_plans:
+            key = (p.get("destination", ""), p.get("data", ""), p.get("duration", ""))
+            prev_index[key] = p.get("price", "")
+
+        for plan in curr_plans:
+            key = (plan.get("destination", ""), plan.get("data", ""), plan.get("duration", ""))
+            prev_price = prev_index.get(key)
+            curr_price = plan.get("price", "")
+
+            if prev_price and curr_price and prev_price != curr_price:
+                changes.append({
+                    "competitor": comp_name,
+                    "destination": plan.get("destination", ""),
+                    "data": plan.get("data", ""),
+                    "duration": plan.get("duration", ""),
+                    "previous_price": prev_price,
+                    "current_price": curr_price,
+                    "currency": plan.get("currency", ""),
+                })
+
+    if changes:
+        logger.info(f"가격 변동 {len(changes)}건 감지")
+    return changes
+
+
+def generate_comparison_table(pricing: dict[str, list[dict]], price_changes: list[dict] = None) -> str:
     """요금제 비교 마크다운 테이블을 생성합니다."""
     if not pricing:
         return ""
 
     lines = ["## 요금제 비교 (인기 여행지)", ""]
+
+    # 가격 변동 요약 (있으면 상단에 표시)
+    if price_changes:
+        lines.append("### ⚡ 가격 변동 감지")
+        lines.append("| 서비스 | 여행지 | 요금제 | 이전 가격 | 현재 가격 |")
+        lines.append("|--------|--------|--------|----------|----------|")
+        for c in price_changes:
+            lines.append(
+                f"| {c['competitor']} | {c['destination']} | "
+                f"{c['data']} / {c['duration']} | "
+                f"{c['previous_price']} {c['currency']} | "
+                f"**{c['current_price']} {c['currency']}** |"
+            )
+        lines.append("")
 
     for dest in POPULAR_DESTINATIONS:
         dest_plans = []

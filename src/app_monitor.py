@@ -189,36 +189,70 @@ def fetch_ios_reviews(app_store_url: str, max_reviews: int = 20) -> list[dict]:
 
 
 def analyze_review_sentiment(reviews: list[dict]) -> dict:
-    """리뷰의 감성을 간단히 분석합니다 (키워드 기반)."""
+    """리뷰의 감성을 분석하고 불만/칭찬을 주제별로 클러스터링합니다."""
     if not reviews:
-        return {"positive": 0, "negative": 0, "neutral": 0, "avg_rating": 0, "top_complaints": [], "top_praises": []}
+        return {
+            "positive": 0, "negative": 0, "neutral": 0,
+            "avg_rating": 0, "top_complaints": [], "top_praises": [],
+            "complaint_clusters": {}, "praise_clusters": {},
+        }
 
     positive_kw = ["좋", "편리", "최고", "추천", "만족", "빠르", "great", "love", "best", "easy", "good"]
     negative_kw = ["불편", "느리", "오류", "버그", "안됨", "실망", "worst", "bad", "slow", "error", "crash", "terrible"]
+
+    # 주제별 클러스터링 키워드
+    _TOPIC_CLUSTERS = {
+        "연결/품질": ["연결", "끊김", "속도", "느림", "빠름", "안정", "불안정", "connection", "speed", "slow", "fast", "stable", "disconnect"],
+        "가격/결제": ["비싸", "저렴", "가격", "결제", "환불", "price", "expensive", "cheap", "refund", "payment", "billing"],
+        "설치/활성화": ["설치", "활성화", "QR", "설정", "install", "activate", "setup", "qr code", "scan"],
+        "고객지원": ["고객", "상담", "응답", "support", "help", "response", "customer service", "chat"],
+        "앱 UI/UX": ["앱", "화면", "디자인", "UI", "UX", "인터페이스", "사용", "app", "interface", "design", "navigate"],
+        "데이터/용량": ["데이터", "용량", "무제한", "data", "gb", "unlimited", "throttle", "cap"],
+        "호환성": ["호환", "지원", "안됨", "아이폰", "갤럭시", "compatible", "support", "iphone", "android"],
+    }
 
     pos = neg = neu = 0
     total_rating = 0
     complaints = []
     praises = []
+    complaint_clusters: dict[str, list[str]] = {topic: [] for topic in _TOPIC_CLUSTERS}
+    praise_clusters: dict[str, list[str]] = {topic: [] for topic in _TOPIC_CLUSTERS}
 
     for r in reviews:
         text = f"{r.get('title', '')} {r.get('content', '')}".lower()
+        title = r.get("title", "")[:80]
         rating = r.get("rating", 3)
         total_rating += rating
 
         has_pos = any(kw in text for kw in positive_kw)
         has_neg = any(kw in text for kw in negative_kw)
 
-        if rating >= 4 or (has_pos and not has_neg):
+        is_positive = rating >= 4 or (has_pos and not has_neg)
+        is_negative = rating <= 2 or (has_neg and not has_pos)
+
+        if is_positive:
             pos += 1
-            if r.get("title"):
-                praises.append(r["title"][:80])
-        elif rating <= 2 or (has_neg and not has_pos):
+            if title:
+                praises.append(title)
+        elif is_negative:
             neg += 1
-            if r.get("title"):
-                complaints.append(r["title"][:80])
+            if title:
+                complaints.append(title)
         else:
             neu += 1
+
+        # 주제별 클러스터링
+        for topic, keywords in _TOPIC_CLUSTERS.items():
+            if any(kw in text for kw in keywords):
+                snippet = title or text[:60]
+                if is_negative and len(complaint_clusters[topic]) < 5:
+                    complaint_clusters[topic].append(snippet)
+                elif is_positive and len(praise_clusters[topic]) < 5:
+                    praise_clusters[topic].append(snippet)
+
+    # 빈 클러스터 제거
+    complaint_clusters = {k: v for k, v in complaint_clusters.items() if v}
+    praise_clusters = {k: v for k, v in praise_clusters.items() if v}
 
     return {
         "positive": pos,
@@ -227,6 +261,8 @@ def analyze_review_sentiment(reviews: list[dict]) -> dict:
         "avg_rating": round(total_rating / len(reviews), 1) if reviews else 0,
         "top_complaints": complaints[:5],
         "top_praises": praises[:5],
+        "complaint_clusters": complaint_clusters,
+        "praise_clusters": praise_clusters,
     }
 
 

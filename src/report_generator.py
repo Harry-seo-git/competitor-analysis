@@ -16,6 +16,30 @@ REPORT_TEMPLATE = """# 유심사 경쟁사 주간 분석 리포트
 
 ---
 
+{% if exec_summary %}
+## 🎯 Executive Summary
+
+> **{{ exec_summary.headline }}**
+
+**경쟁 위험도**: {{ exec_summary.risk_level }} — {{ exec_summary.risk_reason }}
+
+{% if exec_summary.top_threats %}
+### 주요 위협
+| 경쟁사 | 동향 | 유심사 영향 | 긴급도 |
+|--------|------|------------|--------|
+{% for t in exec_summary.top_threats %}| {{ t.competitor }} | {{ t.action }} | {{ t.impact }} | {{ t.urgency }} |
+{% endfor %}
+{% endif %}
+
+{% if exec_summary.opportunities %}
+### 기회 포착
+{% for o in exec_summary.opportunities %}- **{{ o.area }}**: {{ o.description }} → *{{ o.action }}*
+{% endfor %}
+{% endif %}
+
+---
+
+{% endif %}
 ## 주간 요약
 
 | 구분 | 경쟁사 수 | UX 변경 | 신기능 | 요금 변동 |
@@ -74,22 +98,26 @@ REPORT_TEMPLATE = """# 유심사 경쟁사 주간 분석 리포트
 ## 국내 경쟁사 상세 분석
 
 {% for comp in domestic_competitors %}
-### {{ comp.name }}
+### {{ comp.name }}{% if comp.threat_score %} — 위협도 {{ comp.threat_score.score }}/10 ({{ comp.threat_score.level }}){% if comp.threat_score.signal_type %} `{{ comp.threat_score.signal_type }}`{% endif %}{% endif %}
+
 > {{ comp.summary }}
 
 {% if comp.ux_changes %}
-**UX/UI 변경**
-{% for c in comp.ux_changes %}- {{ c.title }}: {{ c.description }}{% if c.source_url %} ([출처]({{ c.source_url }})){% endif %}
+**🎨 UX/UI 변경**
+{% for c in comp.ux_changes %}- {{ c.title }}: {{ c.description }}
+  - 💡 *권장 액션: {{ c.impact }}*{% if c.source_url %} ([출처]({{ c.source_url }})){% endif %}
 {% endfor %}
 {% endif %}
 {% if comp.new_features %}
-**새로운 기능**
-{% for f in comp.new_features %}- {{ f.title }}: {{ f.description }}{% if f.source_url %} ([출처]({{ f.source_url }})){% endif %}
+**🆕 새로운 기능**
+{% for f in comp.new_features %}- {{ f.title }}: {{ f.description }}
+  - 💡 *권장 액션: {{ f.impact }}*{% if f.source_url %} ([출처]({{ f.source_url }})){% endif %}
 {% endfor %}
 {% endif %}
 {% if comp.pricing %}
-**요금/프로모션**
-{% for p in comp.pricing %}- {{ p.title }}: {{ p.description }}{% if p.source_url %} ([출처]({{ p.source_url }})){% endif %}
+**💰 요금/프로모션**
+{% for p in comp.pricing %}- {{ p.title }}: {{ p.description }}
+  - 💡 *권장 액션: {{ p.impact }}*{% if p.source_url %} ([출처]({{ p.source_url }})){% endif %}
 {% endfor %}
 {% endif %}
 {% if not comp.ux_changes and not comp.new_features and not comp.pricing %}
@@ -103,22 +131,26 @@ REPORT_TEMPLATE = """# 유심사 경쟁사 주간 분석 리포트
 ## 해외 경쟁사 상세 분석
 
 {% for comp in international_competitors %}
-### {{ comp.name }}
+### {{ comp.name }}{% if comp.threat_score %} — 위협도 {{ comp.threat_score.score }}/10 ({{ comp.threat_score.level }}){% if comp.threat_score.signal_type %} `{{ comp.threat_score.signal_type }}`{% endif %}{% endif %}
+
 > {{ comp.summary }}
 
 {% if comp.ux_changes %}
-**UX/UI Changes**
-{% for c in comp.ux_changes %}- {{ c.title }}: {{ c.description }}{% if c.source_url %} ([Source]({{ c.source_url }})){% endif %}
+**🎨 UX/UI Changes**
+{% for c in comp.ux_changes %}- {{ c.title }}: {{ c.description }}
+  - 💡 *Action: {{ c.impact }}*{% if c.source_url %} ([Source]({{ c.source_url }})){% endif %}
 {% endfor %}
 {% endif %}
 {% if comp.new_features %}
-**New Features**
-{% for f in comp.new_features %}- {{ f.title }}: {{ f.description }}{% if f.source_url %} ([Source]({{ f.source_url }})){% endif %}
+**🆕 New Features**
+{% for f in comp.new_features %}- {{ f.title }}: {{ f.description }}
+  - 💡 *Action: {{ f.impact }}*{% if f.source_url %} ([Source]({{ f.source_url }})){% endif %}
 {% endfor %}
 {% endif %}
 {% if comp.pricing %}
-**Pricing/Promotions**
-{% for p in comp.pricing %}- {{ p.title }}: {{ p.description }}{% if p.source_url %} ([Source]({{ p.source_url }})){% endif %}
+**💰 Pricing/Promotions**
+{% for p in comp.pricing %}- {{ p.title }}: {{ p.description }}
+  - 💡 *Action: {{ p.impact }}*{% if p.source_url %} ([Source]({{ p.source_url }})){% endif %}
 {% endfor %}
 {% endif %}
 {% if not comp.ux_changes and not comp.new_features and not comp.pricing %}
@@ -154,7 +186,7 @@ REPORT_TEMPLATE = """# 유심사 경쟁사 주간 분석 리포트
 """
 
 
-def generate_report(all_analyses: list[dict], suggestions: list[dict], backend: str, trend: dict = None, pricing_table: str = "") -> str:
+def generate_report(all_analyses: list[dict], suggestions: list[dict], backend: str, trend: dict = None, pricing_table: str = "", executive_summary: dict = None) -> str:
     """LLM 분석 결과를 기반으로 최종 마크다운 리포트를 생성합니다."""
     now = datetime.now()
     week_ago = now - timedelta(days=7)
@@ -199,6 +231,7 @@ def generate_report(all_analyses: list[dict], suggestions: list[dict], backend: 
         suggestions=suggestions,
         trend=trend or {},
         pricing_table=pricing_table,
+        exec_summary=executive_summary or {},
     )
 
     return report

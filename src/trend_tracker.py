@@ -58,6 +58,17 @@ def save_history(analyses: list[dict], history_dir: str) -> None:
                 if isinstance(item, dict) and item.get("source_url"):
                     used_urls.add(item["source_url"])
 
+        # 앱 평점 정보 추출 (추이 추적용)
+        app_ratings = []
+        for app in a.get("app_info", []):
+            if app.get("rating"):
+                app_ratings.append({
+                    "platform": app.get("platform", ""),
+                    "rating": app.get("rating", 0),
+                    "rating_count": app.get("rating_count", 0),
+                    "version": app.get("version", ""),
+                })
+
         entry = {
             "name": a.get("name", ""),
             "region": a.get("region", ""),
@@ -67,6 +78,7 @@ def save_history(analyses: list[dict], history_dir: str) -> None:
             "pricing": len(a.get("pricing", [])),
             "other": len(a.get("other", [])),
             "app_info": a.get("app_info", []),
+            "app_ratings": app_ratings,
             "used_urls": list(used_urls),
         }
         serializable.append(entry)
@@ -81,6 +93,99 @@ def save_history(analyses: list[dict], history_dir: str) -> None:
     for old_file in files[12:]:
         old_file.unlink()
         logger.info(f"오래된 히스토리 삭제: {old_file.name}")
+
+
+def load_rating_history(history_dir: str, weeks: int = 8) -> dict[str, list[dict]]:
+    """최근 N주간의 앱 평점 추이를 로드합니다.
+
+    Returns:
+        {경쟁사명: [{"date": "2026-03-07", "iOS": 4.5, "Android": 4.2}, ...]}
+    """
+    history_path = Path(history_dir)
+    if not history_path.exists():
+        return {}
+
+    files = sorted(history_path.glob("analysis_*.json"), reverse=True)[:weeks]
+    files.reverse()  # 오래된 것부터 정렬
+
+    rating_history: dict[str, list[dict]] = {}
+
+    for f in files:
+        # 파일명에서 날짜 추출: analysis_20260314_010604.json
+        date_str = f.stem.replace("analysis_", "")[:8]
+        try:
+            date_label = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+        except (IndexError, ValueError):
+            continue
+
+        try:
+            entries = json.loads(f.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, IOError):
+            continue
+
+        for entry in entries:
+            name = entry.get("name", "")
+            if not name:
+                continue
+
+            ratings_data = {"date": date_label}
+            for app_rating in entry.get("app_ratings", []):
+                platform = app_rating.get("platform", "")
+                rating = app_rating.get("rating", 0)
+                if platform and rating:
+                    ratings_data[platform] = rating
+
+            if len(ratings_data) > 1:  # date 외에 데이터가 있을 때만
+                rating_history.setdefault(name, []).append(ratings_data)
+
+    return rating_history
+
+
+def load_release_history(history_dir: str, weeks: int = 12) -> dict[str, list[dict]]:
+    """최근 N주간의 릴리즈 이력을 로드합니다 (기능 출시 속도 비교용).
+
+    Returns:
+        {경쟁사명: [{"date": "2026-03-07", "ux_changes": 2, "new_features": 1, "pricing": 0, "total": 3}, ...]}
+    """
+    history_path = Path(history_dir)
+    if not history_path.exists():
+        return {}
+
+    files = sorted(history_path.glob("analysis_*.json"), reverse=True)[:weeks]
+    files.reverse()
+
+    release_history: dict[str, list[dict]] = {}
+
+    for f in files:
+        date_str = f.stem.replace("analysis_", "")[:8]
+        try:
+            date_label = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+        except (IndexError, ValueError):
+            continue
+
+        try:
+            entries = json.loads(f.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, IOError):
+            continue
+
+        for entry in entries:
+            name = entry.get("name", "")
+            if not name:
+                continue
+
+            ux = entry.get("ux_changes", 0)
+            feat = entry.get("new_features", 0)
+            pricing = entry.get("pricing", 0)
+
+            release_history.setdefault(name, []).append({
+                "date": date_label,
+                "ux_changes": ux,
+                "new_features": feat,
+                "pricing": pricing,
+                "total": ux + feat + pricing,
+            })
+
+    return release_history
 
 
 def compare_with_previous(current: list[dict], previous: list[dict]) -> dict:

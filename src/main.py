@@ -14,12 +14,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app_monitor import fetch_all_app_info
 from config_loader import get_all_competitors, load_config
 from dashboard import generate_dashboard
-from llm_analyzer import analyze_competitor, generate_suggestions, get_active_backend
-from pricing_monitor import collect_pricing, generate_comparison_table
+from llm_analyzer import analyze_competitor, generate_executive_summary, generate_suggestions, get_active_backend
+from pricing_monitor import collect_pricing, detect_pricing_changes, generate_comparison_table
 from report_generator import generate_report, save_report
 from site_snapshot import monitor_all_sites
 from slack_notifier import send_report_to_slack
-from trend_tracker import load_history, load_previous_urls, save_history, compare_with_previous
+from trend_tracker import (
+    load_history, load_previous_urls, load_rating_history, load_release_history,
+    save_history, compare_with_previous,
+)
 from web_searcher import fetch_pages_for_results, search_competitor
 
 logging.basicConfig(
@@ -92,34 +95,47 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
         # API rate limit 방지
         time.sleep(3)
 
-    # 6. 전략 제안 생성
+    # 6. Executive Summary + 전략 제안 생성
+    executive_summary = generate_executive_summary(all_analyses)
     suggestions = generate_suggestions(all_analyses)
 
     # 7. 트렌드 비교 (이전 주 대비)
     trend = compare_with_previous(all_analyses, previous_history)
     save_history(all_analyses, history_dir)
 
-    # 8. 요금제 비교 수집
+    # 8. 요금제 비교 수집 + 가격 변동 감지
     logger.info("=== 요금제 정보 수집 ===")
     pricing_data = collect_pricing(competitors)
-    pricing_table = generate_comparison_table(pricing_data)
+    price_changes = detect_pricing_changes(pricing_data)
+    pricing_table = generate_comparison_table(pricing_data, price_changes=price_changes)
 
     # 9. 리포트 생성
-    report = generate_report(all_analyses, suggestions, backend, trend=trend, pricing_table=pricing_table)
+    report = generate_report(
+        all_analyses, suggestions, backend,
+        trend=trend, pricing_table=pricing_table,
+        executive_summary=executive_summary,
+    )
     reports_dir = str(PROJECT_ROOT / "reports")
     report_path = save_report(report, output_dir=reports_dir)
     logger.info(f"리포트 생성 완료: {report_path}")
 
     # 10. 대시보드 생성
+    rating_history = load_rating_history(history_dir)
+    release_history = load_release_history(history_dir)
     dashboard_path = generate_dashboard(
-        all_analyses, suggestions, backend, trend=trend, output_dir=reports_dir,
+        all_analyses, suggestions, backend,
+        trend=trend, output_dir=reports_dir,
+        executive_summary=executive_summary, price_changes=price_changes,
+        rating_history=rating_history, release_history=release_history,
     )
     logger.info(f"대시보드 생성 완료: {dashboard_path}")
 
     # 11. Slack 전송
     if not skip_slack:
         success = send_report_to_slack(
-            all_analyses, suggestions, backend, trend=trend, errors=errors
+            all_analyses, suggestions, backend,
+            trend=trend, errors=errors,
+            executive_summary=executive_summary, price_changes=price_changes,
         )
         if success:
             logger.info("Slack 전송 성공")
