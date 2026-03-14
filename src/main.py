@@ -50,9 +50,10 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
     logger.info("=== 웹사이트 스냅샷 수집 ===")
     site_changes = monitor_all_sites(competitors)
 
-    # 4. 이전 주 사용 URL 로드 (중복 방지)
+    # 4. 히스토리 로드 (트렌드 비교 + 중복 URL 제거에 공통 사용)
     history_dir = str(PROJECT_ROOT / "data" / "history")
-    previous_urls = load_previous_urls(history_dir)
+    previous_history = load_history(history_dir)
+    previous_urls = load_previous_urls(previous_history)
 
     # 5. 경쟁사별 웹 검색 → 페이지 수집 → LLM 분석
     all_analyses = []
@@ -95,8 +96,7 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
     suggestions = generate_suggestions(all_analyses)
 
     # 7. 트렌드 비교 (이전 주 대비)
-    previous = load_history(history_dir)
-    trend = compare_with_previous(all_analyses, previous)
+    trend = compare_with_previous(all_analyses, previous_history)
     save_history(all_analyses, history_dir)
 
     # 8. 요금제 비교 수집

@@ -28,11 +28,14 @@ def load_history(history_dir: str) -> list[dict]:
         return []
 
 
-def load_previous_urls(history_dir: str) -> set[str]:
-    """이전 분석에서 사용된 URL 목록을 로드합니다 (중복 방지용)."""
-    previous = load_history(history_dir)
+def load_previous_urls(history: list[dict]) -> set[str]:
+    """이전 분석 결과에서 사용된 URL 목록을 추출합니다 (중복 방지용).
+
+    Args:
+        history: load_history()로 이미 로드한 히스토리 데이터
+    """
     urls = set()
-    for entry in previous:
+    for entry in history:
         for url in entry.get("used_urls", []):
             urls.add(url)
     if urls:
