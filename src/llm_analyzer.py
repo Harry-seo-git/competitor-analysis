@@ -364,5 +364,6 @@ def _empty_analysis(competitor_name: str) -> dict:
         "new_features": [],
         "pricing": [],
         "other": [],
+        "threat_score": {"score": 1, "level": "낮음", "reason": "분석 데이터 없음"},
         "summary": "이번 주 특이사항 없음",
     }

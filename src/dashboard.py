@@ -78,9 +78,9 @@ tr:hover td { background: #334155; }
 
   <!-- 필터 -->
   <div class="filter-bar">
-    <button class="filter-btn active" onclick="filterRegion('all')">전체</button>
-    <button class="filter-btn" onclick="filterRegion('domestic')">🇰🇷 국내</button>
-    <button class="filter-btn" onclick="filterRegion('international')">🌏 해외</button>
+    <button class="filter-btn active" onclick="filterRegion('all', this)">전체</button>
+    <button class="filter-btn" onclick="filterRegion('domestic', this)">🇰🇷 국내</button>
+    <button class="filter-btn" onclick="filterRegion('international', this)">🌏 해외</button>
   </div>
 
   <!-- 경쟁사 카드 -->
@@ -119,9 +119,9 @@ tr:hover td { background: #334155; }
 </div>
 
 <script>
-function filterRegion(region) {
+function filterRegion(region, btn) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+  btn.classList.add('active');
   document.querySelectorAll('.comp-card').forEach(card => {
     card.style.display = (region === 'all' || card.dataset.region === region) ? '' : 'none';
   });
@@ -147,11 +147,11 @@ def _build_competitor_card(comp: dict) -> str:
     # 링크
     links = []
     if comp.get("url"):
-        links.append(f'<a class="link" href="{comp["url"]}" target="_blank">웹</a>')
+        links.append(f'<a class="link" href="{html.escape(comp["url"])}" target="_blank">웹</a>')
     if comp.get("app_store"):
-        links.append(f'<a class="link" href="{comp["app_store"]}" target="_blank">iOS</a>')
+        links.append(f'<a class="link" href="{html.escape(comp["app_store"])}" target="_blank">iOS</a>')
     if comp.get("play_store"):
-        links.append(f'<a class="link" href="{comp["play_store"]}" target="_blank">Android</a>')
+        links.append(f'<a class="link" href="{html.escape(comp["play_store"])}" target="_blank">Android</a>')
     links_html = " · ".join(links)
 
     # 변경사항 목록

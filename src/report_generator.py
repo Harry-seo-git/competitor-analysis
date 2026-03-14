@@ -47,7 +47,7 @@ REPORT_TEMPLATE = """# 유심사 경쟁사 주간 분석 리포트
 |--------|------|------|-----------|
 {% for app in comp.app_info %}| {{ app.platform }} | {{ app.version }} | {{ '%.1f'|format(app.rating) }} ({{ app.rating_count }}) | {{ app.updated[:10] }} |
 {% endfor %}
-{% if comp.app_info[0].release_notes %}
+{% if comp.app_info[0].get('release_notes') %}
 > 릴리즈 노트: {{ comp.app_info[0].release_notes[:200] }}
 {% endif %}
 {% endif %}{% endfor %}
