@@ -8,13 +8,14 @@ LLM을 활용하여 비정형 요금 정보를 구조화합니다.
 
 import json
 import logging
-import os
 import time
 from datetime import datetime
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+
+from llm_analyzer import ANTHROPIC_API_KEY, _parse_json_response
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +71,7 @@ def _has_pricing_content(text: str) -> bool:
 
 def _extract_pricing_batch_with_claude(batch: dict[str, str]) -> dict[str, list[dict]]:
     """여러 경쟁사의 요금 정보를 한 번의 API 호출로 추출합니다."""
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
+    if not ANTHROPIC_API_KEY:
         return {}
 
     # 배치 프롬프트 조립
@@ -98,12 +98,12 @@ def _extract_pricing_batch_with_claude(batch: dict[str, str]) -> dict[str, list[
         resp = requests.post(
             "https://api.anthropic.com/v1/messages",
             headers={
-                "x-api-key": api_key,
+                "x-api-key": ANTHROPIC_API_KEY,
                 "content-type": "application/json",
                 "anthropic-version": "2023-06-01",
             },
             json={
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-sonnet-4-6-20250514",
                 "max_tokens": 4096,
                 "messages": [{"role": "user", "content": prompt}],
             },
@@ -111,19 +111,9 @@ def _extract_pricing_batch_with_claude(batch: dict[str, str]) -> dict[str, list[
         )
         resp.raise_for_status()
         text = resp.json()["content"][0]["text"]
-
-        # JSON 파싱
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0]
-        elif "```" in text:
-            text = text.split("```")[1].split("```")[0]
-
-        try:
-            data = json.loads(text.strip())
-        except json.JSONDecodeError:
-            start = text.index("{")
-            end = text.rindex("}") + 1
-            data = json.loads(text[start:end])
+        data = _parse_json_response(text)
+        if not data:
+            return {}
 
         # 결과 정리
         result = {}

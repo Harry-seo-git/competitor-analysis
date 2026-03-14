@@ -171,7 +171,7 @@ def _call_claude(prompt: str) -> str:
                 "anthropic-version": "2023-06-01",
             },
             json={
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-sonnet-4-6-20250514",
                 "max_tokens": 2048,
                 "messages": [{"role": "user", "content": prompt}],
             },

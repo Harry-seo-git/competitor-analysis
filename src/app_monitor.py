@@ -31,6 +31,14 @@ def _safe_int(value, default: int = 0) -> int:
         return default
 
 
+def _safe_float(value, default: float = 0.0) -> float:
+    """안전한 실수 변환. 변환 실패 시 기본값 반환."""
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 # ──────────────────────────────────────────────
 # iOS App Store (iTunes Lookup API)
 # ──────────────────────────────────────────────
@@ -136,8 +144,8 @@ def fetch_android_app_info(play_store_url: str) -> dict:
             "version": version,
             "updated": updated,
             "release_notes": release_notes,
-            "rating": float(rating) if rating else 0,
-            "rating_count": int(rating_count) if rating_count else 0,
+            "rating": _safe_float(rating),
+            "rating_count": _safe_int(rating_count),
             "url": play_store_url,
         }
     except Exception as e:

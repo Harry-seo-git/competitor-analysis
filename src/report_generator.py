@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from jinja2 import Template
 
@@ -205,8 +206,6 @@ def generate_report(all_analyses: list[dict], suggestions: list[dict], backend: 
 
 def save_report(report: str, output_dir: str = "reports") -> str:
     """리포트를 파일로 저장합니다."""
-    from pathlib import Path
-
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
