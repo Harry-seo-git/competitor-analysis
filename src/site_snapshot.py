@@ -86,6 +86,12 @@ def fetch_site_snapshot(url: str) -> dict:
         structure["url"] = url
         structure["fetched_at"] = datetime.now().isoformat()
         return structure
+    except requests.exceptions.HTTPError as e:
+        if resp.status_code == 403:
+            logger.warning(f"사이트 접근 차단 ({url}): 봇 접근이 제한된 사이트입니다.")
+        else:
+            logger.error(f"사이트 스냅샷 실패 ({url}): {e}")
+        return {}
     except Exception as e:
         logger.error(f"사이트 스냅샷 실패 ({url}): {e}")
         return {}

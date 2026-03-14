@@ -19,6 +19,7 @@ GOOGLE_CSE_ID = os.environ.get("GOOGLE_CSE_ID", "")
 
 def search_competitor(competitor: dict, days_back: int = 7) -> list[dict]:
     """경쟁사에 대한 최근 정보를 웹에서 검색합니다."""
+    comp_name = competitor.get("name", "")
     all_results = []
 
     for keyword in competitor.get("keywords", []):
@@ -26,17 +27,42 @@ def search_competitor(competitor: dict, days_back: int = 7) -> list[dict]:
         all_results.extend(results)
         time.sleep(1)  # Rate limiting
 
-    # 중복 제거 (URL 기준) + 무관한 도메인 필터링
+    # 중복 제거 + 무관한 도메인 필터링 + 관련성 필터링
     seen_urls = set()
     unique_results = []
     for r in all_results:
         url = r["url"]
         if url in seen_urls or _should_skip_url(url):
             continue
+        if not _is_relevant_result(r, comp_name):
+            logger.debug(f"  관련성 낮은 결과 제외: {r['title'][:60]}")
+            continue
         seen_urls.add(url)
         unique_results.append(r)
 
     return unique_results
+
+
+# 관련성 판단용 eSIM/로밍 키워드
+_ESIM_KEYWORDS = [
+    "esim", "이심", "로밍", "roaming", "sim", "유심", "데이터",
+    "travel", "여행", "통신", "요금", "pricing", "plan",
+    "mobile", "모바일", "앱", "app",
+]
+
+
+def _is_relevant_result(result: dict, competitor_name: str) -> bool:
+    """검색 결과가 해당 경쟁사 및 eSIM 서비스와 관련 있는지 확인합니다."""
+    text = f"{result.get('title', '')} {result.get('snippet', '')}".lower()
+    comp_lower = competitor_name.lower()
+
+    # 경쟁사 이름이 제목/요약에 포함되면 관련 있음
+    if comp_lower in text:
+        return True
+
+    # eSIM/로밍 관련 키워드가 2개 이상 포함되면 관련 있음
+    match_count = sum(1 for kw in _ESIM_KEYWORDS if kw in text)
+    return match_count >= 2
 
 
 def _perform_search(query: str, days_back: int) -> list[dict]:
@@ -190,11 +216,27 @@ def fetch_page_content(url: str, max_length: int = 5000) -> dict:
 
 # 스크래핑이 차단되거나 eSIM/로밍과 무관한 도메인
 SKIP_DOMAINS = [
+    # SNS / 동영상
     "reddit.com", "facebook.com", "instagram.com", "tiktok.com",
     "twitter.com", "x.com", "linkedin.com", "threads.com",
     "youtube.com", "youtu.be", "pinterest.com",
-    "tesztevok.hu", "appbrain.com", "cybernews.com", "kkday.com",
+    # 백과 / 위키
     "namu.wiki", "wikipedia.org",
+    # 구인 / 리모트 잡
+    "wantapply.com", "dailyremote.com", "remoteok.com", "weworkremotely.com",
+    # 개발자 / 기술 (eSIM 무관)
+    "dev.to", "github.com", "stackoverflow.com",
+    # 쇼핑 / 마켓플레이스
+    "alibaba.com", "aliexpress.com", "mozillion.com",
+    # 게임 / 커뮤니티
+    "inven.co.kr", "dcinside.com", "fmkorea.com",
+    # 여행 (경쟁사 분석과 무관한 여행 사이트)
+    "trip.com", "kkday.com", "klook.com",
+    # APK / 앱 분석
+    "apkmirror.com", "appbrain.com",
+    # 기타 무관
+    "tesztevok.hu", "cybernews.com", "purrweb.com",
+    "contactcentertechnologyinsights.com", "vocus.cc",
 ]
 
 
