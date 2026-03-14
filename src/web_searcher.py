@@ -3,7 +3,6 @@
 import logging
 import os
 import time
-from datetime import datetime, timedelta
 from urllib.parse import quote_plus
 
 import requests
@@ -92,7 +91,7 @@ def _search_with_serpapi(query: str, days_back: int) -> list[dict]:
             "api_key": SERPAPI_KEY,
             "engine": "google",
             "num": 10,
-            "tbs": f"qdr:w",  # 최근 1주일
+            "tbs": "qdr:w",  # 최근 1주일
             "hl": "ko",
             "gl": "kr",
         }

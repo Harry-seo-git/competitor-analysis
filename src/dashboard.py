@@ -245,13 +245,14 @@ def _build_app_table(analyses: list[dict]) -> str:
             platform_emoji = "🍎" if app.get("platform") == "iOS" else "🤖"
             rating = app.get("rating", 0)
             rating_str = f'<span class="rating">{"★" * int(rating)}{"☆" * (5 - int(rating))}</span> {rating:.1f}' if rating else "-"
-            url = app.get("url", "")
-            version = app.get("version", "N/A")
-            updated = app.get("updated", "")[:10]
+            url = html.escape(app.get("url", ""))
+            version = html.escape(app.get("version", "N/A"))
+            updated = html.escape(app.get("updated", "")[:10])
+            name = html.escape(a.get("name", ""))
 
             rows += f'''<tr>
-                <td><strong>{a["name"]}</strong></td>
-                <td>{platform_emoji} {app.get("platform", "")}</td>
+                <td><strong>{name}</strong></td>
+                <td>{platform_emoji} {html.escape(app.get("platform", ""))}</td>
                 <td>{version}</td>
                 <td>{rating_str} ({app.get("rating_count", 0):,})</td>
                 <td>{updated}</td>
@@ -273,13 +274,13 @@ def _build_suggestions_table(suggestions: list[dict]) -> str:
 
     rows = ""
     for s in suggestions:
-        priority = s.get("priority", "")
-        badge_class = {"높음": "badge-high", "중간": "badge-mid", "낮음": "badge-low"}.get(priority, "badge-stable")
+        priority = html.escape(s.get("priority", ""))
+        badge_class = {"높음": "badge-high", "중간": "badge-mid", "낮음": "badge-low"}.get(s.get("priority", ""), "badge-stable")
         rows += f'''<tr>
             <td><span class="badge {badge_class}">{priority}</span></td>
-            <td>{s.get("category", "")}</td>
-            <td>{s.get("action", "")}</td>
-            <td style="color:#94a3b8">{s.get("reason", "")}</td>
+            <td>{html.escape(s.get("category", ""))}</td>
+            <td>{html.escape(s.get("action", ""))}</td>
+            <td style="color:#94a3b8">{html.escape(s.get("reason", ""))}</td>
         </tr>'''
 
     return f'''<table>
@@ -309,24 +310,24 @@ def generate_dashboard(
     cards_html = "\n".join(_build_competitor_card(a) for a in analyses)
 
     # 대시보드 HTML 조립
-    html = DASHBOARD_TEMPLATE
-    html = html.replace("__GENERATED_AT__", now.strftime("%Y-%m-%d %H:%M"))
-    html = html.replace("__BACKEND__", backend_labels.get(backend, backend))
-    html = html.replace("__TOTAL_COMPETITORS__", str(len(analyses)))
-    html = html.replace("__TOTAL_UX__", str(total_ux))
-    html = html.replace("__TOTAL_FEATURES__", str(total_feat))
-    html = html.replace("__TOTAL_PRICING__", str(total_price))
-    html = html.replace("__COMPETITOR_CARDS__", cards_html)
-    html = html.replace("__TREND_TABLE__", _build_trend_table(trend or {}))
-    html = html.replace("__APP_TABLE__", _build_app_table(analyses))
-    html = html.replace("__SUGGESTIONS_TABLE__", _build_suggestions_table(suggestions))
+    html_output = DASHBOARD_TEMPLATE
+    html_output = html_output.replace("__GENERATED_AT__", now.strftime("%Y-%m-%d %H:%M"))
+    html_output = html_output.replace("__BACKEND__", backend_labels.get(backend, backend))
+    html_output = html_output.replace("__TOTAL_COMPETITORS__", str(len(analyses)))
+    html_output = html_output.replace("__TOTAL_UX__", str(total_ux))
+    html_output = html_output.replace("__TOTAL_FEATURES__", str(total_feat))
+    html_output = html_output.replace("__TOTAL_PRICING__", str(total_price))
+    html_output = html_output.replace("__COMPETITOR_CARDS__", cards_html)
+    html_output = html_output.replace("__TREND_TABLE__", _build_trend_table(trend or {}))
+    html_output = html_output.replace("__APP_TABLE__", _build_app_table(analyses))
+    html_output = html_output.replace("__SUGGESTIONS_TABLE__", _build_suggestions_table(suggestions))
 
     # 저장
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     filename = f"dashboard_{now.strftime('%Y%m%d_%H%M%S')}.html"
     filepath = output_path / filename
-    filepath.write_text(html, encoding="utf-8")
+    filepath.write_text(html_output, encoding="utf-8")
 
     logger.info(f"대시보드 생성 완료: {filepath}")
     return str(filepath)
