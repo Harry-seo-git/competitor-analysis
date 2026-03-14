@@ -26,13 +26,15 @@ def search_competitor(competitor: dict, days_back: int = 7) -> list[dict]:
         all_results.extend(results)
         time.sleep(1)  # Rate limiting
 
-    # 중복 제거 (URL 기준)
+    # 중복 제거 (URL 기준) + 무관한 도메인 필터링
     seen_urls = set()
     unique_results = []
     for r in all_results:
-        if r["url"] not in seen_urls:
-            seen_urls.add(r["url"])
-            unique_results.append(r)
+        url = r["url"]
+        if url in seen_urls or _should_skip_url(url):
+            continue
+        seen_urls.add(url)
+        unique_results.append(r)
 
     return unique_results
 
@@ -186,11 +188,13 @@ def fetch_page_content(url: str, max_length: int = 5000) -> dict:
         return {"url": url, "title": "", "content": ""}
 
 
-# 스크래핑이 차단되거나 유용하지 않은 도메인
+# 스크래핑이 차단되거나 eSIM/로밍과 무관한 도메인
 SKIP_DOMAINS = [
     "reddit.com", "facebook.com", "instagram.com", "tiktok.com",
     "twitter.com", "x.com", "linkedin.com", "threads.com",
+    "youtube.com", "youtu.be", "pinterest.com",
     "tesztevok.hu", "appbrain.com", "cybernews.com", "kkday.com",
+    "namu.wiki", "wikipedia.org",
 ]
 
 
