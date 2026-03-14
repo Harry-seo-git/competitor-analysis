@@ -241,7 +241,8 @@ SKIP_DOMAINS = [
     "trip.com", "kkday.com", "klook.com",
     # APK / 앱 분석
     "apkmirror.com", "appbrain.com",
-    # 기타 무관
+    # 여행사 / 부동산 / 기타 무관
+    "hanatour.com", "realhouse.hu", "rpakr.com",
     "tesztevok.hu", "cybernews.com", "purrweb.com",
     "contactcentertechnologyinsights.com", "vocus.cc",
 ]
