@@ -1,0 +1,371 @@
+[
+  {
+    "name": "로밍도깨비",
+    "region": "domestic",
+    "summary": "로밍도깨비는 현재 일본 대상 올데이 플러스 상품을 중심으로 한 일반적인 마케팅 활동을 진행하고 있으며, 특별한 변화는 없는 상황입니다.",
+    "ux_changes": 1,
+    "new_features": 1,
+    "pricing": 1,
+    "other": 1,
+    "app_info": [
+      {
+        "platform": "iOS",
+        "app_name": "로밍도깨비 eSIM – 데이터가 필요한 순간",
+        "version": "1.10.1",
+        "updated": "2026-02-16T05:36:28Z",
+        "release_notes": "- 상품 구매 전 필요한 정보를 한눈에 확인할 수 있도록 상세 화면을 개선했어요.\n- 로밍도깨비의 최신 혜택과 소식을 모아볼 수 있는 전용 화면을 새롭게 추가했어요.\n- 안정적인 서비스를 위해 버그를 수정했어요.",
+        "rating": 4.80459,
+        "rating_count": 5015,
+        "url": "https://apps.apple.com/kr/app/id1525664178",
+        "review_sentiment": {
+          "positive": 20,
+          "negative": 0,
+          "neutral": 0,
+          "avg_rating": 5.0,
+          "top_complaints": [],
+          "top_praises": [
+            "출장 갈때면",
+            "여행",
+            "너무 편리한 것 같아요",
+            "감사합니다",
+            "너무 저렴하고 편리해요"
+          ]
+        },
+        "recent_reviews_count": 20
+      },
+      {
+        "platform": "Android",
+        "app_name": "로밍도깨비 eSIM – 데이터가 필요한 순간",
+        "version": "",
+        "updated": "2026. 2. 12.",
+        "release_notes": "",
+        "rating": 4.333333492279053,
+        "rating_count": 2347,
+        "url": "https://play.google.com/store/apps/details?id=com.rokebiesim"
+      }
+    ]
+  },
+  {
+    "name": "도시락eSIM",
+    "region": "domestic",
+    "summary": "도시락eSIM은 AI 맞춤 추천과 QR코드 없는 간편 설치 기능으로 UX를 대폭 개선하고, 무료 통화 서비스까지 추가하여 종합적인 경쟁력을 강화하고 있음",
+    "ux_changes": 2,
+    "new_features": 2,
+    "pricing": 1,
+    "other": 1,
+    "app_info": [
+      {
+        "platform": "iOS",
+        "app_name": "도시락eSIM - 해외여행 필수 데이터 로밍 앱",
+        "version": "1.5.0",
+        "updated": "2026-02-23T00:30:12Z",
+        "release_notes": "AI 상품 추천 기능이 추가됐어요!\n복잡한 상품 비교 없이 AI와 자유롭게 대화하며 나에게 딱 맞는 상품을 추천 받아보세요.\n더불어 이용 중 불편했던 부분들을 개선해 더욱 편리해졌어요.",
+        "rating": 4.78698,
+        "rating_count": 1014,
+        "url": "https://apps.apple.com/kr/app/id1620488208",
+        "review_sentiment": {
+          "positive": 19,
+          "negative": 1,
+          "neutral": 0,
+          "avg_rating": 4.8,
+          "top_complaints": [
+            "ㅈㄴ느림"
+          ],
+          "top_praises": [
+            "편하게 잘 쓰고 있어요",
+            "넘조아용!",
+            "좋아요 도시락esim",
+            "잘 쓰고 있습니다",
+            "해외 여행 시 유용한 앱"
+          ]
+        },
+        "recent_reviews_count": 20
+      },
+      {
+        "platform": "Android",
+        "app_name": "도시락eSIM - 바로설치로 해외데이터 1초 연결",
+        "version": "",
+        "updated": "2026. 2. 20.",
+        "release_notes": "",
+        "rating": 4.44444465637207,
+        "rating_count": 1219,
+        "url": "https://play.google.com/store/apps/details?id=com.dosirakesim.mobileapp"
+      }
+    ]
+  },
+  {
+    "name": "플릿",
+    "region": "domestic",
+    "summary": "플릿은 eSIM 관리의 복잡성을 해결하는 혁신적 UX와 선물하기, 플랜 연장 등 차별화된 기능으로 5만+ 다운로드를 달성하며 시장 입지를 확대하고 있음",
+    "ux_changes": 2,
+    "new_features": 2,
+    "pricing": 1,
+    "other": 1,
+    "app_info": [
+      {
+        "platform": "iOS",
+        "app_name": "플릿 이심 (flit eSIM) - 해외여행 데이터로밍",
+        "version": "1.22.3",
+        "updated": "2026-03-12T01:20:08Z",
+        "release_notes": "• QR코드 스캔이 필요 없는 '원탭설치'를 안드로이드에서도 이용할 수 있어요.\n• 항공인을 위해 eSIM 교체 기능을 추가했어요. 플릿으로 언제나 가뿐하게 떠나세요!",
+        "rating": 4.71154,
+        "rating_count": 572,
+        "url": "https://apps.apple.com/kr/app/id1669672934",
+        "review_sentiment": {
+          "positive": 19,
+          "negative": 0,
+          "neutral": 1,
+          "avg_rating": 4.9,
+          "top_complaints": [],
+          "top_praises": [
+            "가성비 좋고 잘돼요",
+            "여기조아요",
+            "플릿이심 좋아요",
+            "항상 잘쓰고 있어요!",
+            "너무너무"
+          ]
+        },
+        "recent_reviews_count": 20
+      },
+      {
+        "platform": "Android",
+        "app_name": "플릿 이심 (flit eSIM) - 해외여행 데이터로밍",
+        "version": "",
+        "updated": "2026. 3. 11.",
+        "release_notes": "",
+        "rating": 0,
+        "rating_count": 0,
+        "url": "https://play.google.com/store/apps/details?id=com.flitmobile"
+      }
+    ]
+  },
+  {
+    "name": "이심이지",
+    "region": "domestic",
+    "summary": "eSIMEasy는 현재 특별한 변화나 새로운 동향이 관찰되지 않으며, 앱스토어에서 기존 포지셔닝을 유지하고 있는 상황입니다.",
+    "ux_changes": 1,
+    "new_features": 1,
+    "pricing": 1,
+    "other": 1,
+    "app_info": [
+      {
+        "platform": "iOS",
+        "app_name": "이심이지 eSIM - 유심 없이 간편한 해외 로밍 이심",
+        "version": "1.8.0",
+        "updated": "2026-02-12T03:48:10Z",
+        "release_notes": "사용성을 개선했어요.",
+        "rating": 4.9625,
+        "rating_count": 6400,
+        "url": "https://apps.apple.com/kr/app/id1628484156",
+        "review_sentiment": {
+          "positive": 19,
+          "negative": 0,
+          "neutral": 1,
+          "avg_rating": 4.7,
+          "top_complaints": [],
+          "top_praises": [
+            "여행갈때 참 좋은 어플",
+            "좋아요",
+            "강추합니다!",
+            "좋아요",
+            "이렇게 편한게 있다니"
+          ]
+        },
+        "recent_reviews_count": 20
+      },
+      {
+        "platform": "Android",
+        "app_name": "이심이지 eSIM - 해외여행! 로밍, 유심 대신 이심",
+        "version": "",
+        "updated": "2026. 2. 8.",
+        "release_notes": "",
+        "rating": 4.829999923706055,
+        "rating_count": 5402,
+        "url": "https://play.google.com/store/apps/details?id=com.baycon.android.esim"
+      }
+    ]
+  },
+  {
+    "name": "Saily",
+    "region": "international",
+    "summary": "Saily는 데이터 충전 기능 추가와 공항 Fast-track 서비스 등 eSIM을 넘어선 여행 생태계 서비스로 차별화 전략을 강화하고 있음",
+    "ux_changes": 1,
+    "new_features": 2,
+    "pricing": 1,
+    "other": 1,
+    "app_info": [
+      {
+        "platform": "iOS",
+        "app_name": "Saily - 간편하고 안전한 여행용 eSIM 앱",
+        "version": "3.30.0",
+        "updated": "2026-03-11T11:34:36Z",
+        "release_notes": "더욱 원활한 경험을 드리기 위해 앱 성능과 안정성이 개선되었습니다!",
+        "rating": 4.74404,
+        "rating_count": 168,
+        "url": "https://apps.apple.com/us/app/id6475045151",
+        "review_sentiment": {
+          "positive": 4,
+          "negative": 4,
+          "neutral": 0,
+          "avg_rating": 2.6,
+          "top_complaints": [
+            "너무 느려요",
+            "이거",
+            "Very slow service",
+            "돈 먹지말고 뱉어라"
+          ],
+          "top_praises": [
+            "출장때 마다 사용해요",
+            "굿",
+            "여행 유투버들도 좀 써보고 추천했으면…",
+            "이번에 여행하며 썼는데 괜찮음"
+          ]
+        },
+        "recent_reviews_count": 8
+      },
+      {
+        "platform": "Android",
+        "app_name": "Saily: Travel eSIM & Data",
+        "version": "",
+        "updated": "2026. 3. 11.",
+        "release_notes": "",
+        "rating": 4.721407413482666,
+        "rating_count": 83570,
+        "url": "https://play.google.com/store/apps/details?id=com.saily.android"
+      }
+    ]
+  },
+  {
+    "name": "Holafly",
+    "region": "international",
+    "summary": "Holafly가 5% 할인 프로모션과 함께 실시간 데이터 추적 기능을 강화하며 사용자 경험 개선에 집중하고 있어 중간 수준의 경쟁 위협 상황",
+    "ux_changes": 1,
+    "new_features": 1,
+    "pricing": 1,
+    "other": 2,
+    "app_info": [
+      {
+        "platform": "iOS",
+        "app_name": "Holafly eSIM: 데이터 무제한",
+        "version": "3.19.0",
+        "updated": "2026-03-13T13:03:14Z",
+        "release_notes": "Holafly와 함께라면 여행 중에도 간편하게 연결 상태를 유지할 수 있습니다.eSIM 활성화 프로세스를 개선하고 결제 시 할인 코드 관련 오류를 수정했습니다. 또한 이번 업데이트에는 여행 중 보다 안정적인 연결을 위한 버그 수정 및 성능 개선 사항이 포함되어 있습니다.문의 사항이 있으신가요? 앱 내 고객지원 또는 holafly.com을 통해 24시간 언제든지 문의하세요.",
+        "rating": 4.60256,
+        "rating_count": 78,
+        "url": "https://apps.apple.com/us/app/id1629600786",
+        "review_sentiment": {
+          "positive": 4,
+          "negative": 4,
+          "neutral": 0,
+          "avg_rating": 3.0,
+          "top_complaints": [
+            "짜증나네요",
+            "절대 쓰지마셈",
+            "Awful, avoid",
+            "로밍된다는걸로 비싸게 결제했는데 되지도 않고 응답도 안됨"
+          ],
+          "top_praises": [
+            "무난추 근데 무제한은 여기가 답",
+            "問題を解決してくれてありがとう",
+            "환불요청",
+            "유심<<<<<<이심"
+          ]
+        },
+        "recent_reviews_count": 8
+      },
+      {
+        "platform": "Android",
+        "app_name": "Holafly eSIM: Unlimited Data",
+        "version": "",
+        "updated": "2026. 3. 12.",
+        "release_notes": "",
+        "rating": 4.672131061553955,
+        "rating_count": 47556,
+        "url": "https://play.google.com/store/apps/details?id=com.holafly.holafly"
+      }
+    ]
+  },
+  {
+    "name": "Airalo",
+    "region": "international",
+    "summary": "Airalo는 200개 이상 국가에서 음성통화, SMS, 데이터를 통합 지원하는 Discover+ 글로벌 eSIM 서비스를 통해 종합 통신 서비스 제공업체로 포지셔닝 강화 중",
+    "ux_changes": 1,
+    "new_features": 1,
+    "pricing": 1,
+    "other": 1,
+    "app_info": [
+      {
+        "platform": "iOS",
+        "app_name": "Airalo: eSIM 여행 & 인터넷",
+        "version": "2.12.0",
+        "updated": "2026-03-11T11:37:47Z",
+        "release_notes": "새로운 업데이트를 \"만나보세요\"! Airalo 팀은 사용자 경험을 더욱 개선하기 위해 항상 열심히 노력하고 있습니다. 새로운 소식:\n설치 지침을 개선하고 연결 단계를 단순화하여 eSIM을 설치하고 사용하는 것이 더 쉬워졌습니다.\n사용자 경험을 개선하기 위해 버그를 수정하고 UI/UX를 개선했습니다.",
+        "rating": 4.47039,
+        "rating_count": 1182,
+        "url": "https://apps.apple.com/us/app/id1475911720",
+        "review_sentiment": {
+          "positive": 9,
+          "negative": 10,
+          "neutral": 1,
+          "avg_rating": 2.6,
+          "top_complaints": [
+            "다신 선택하지 않을 유심",
+            "싱가폴쪽 회선은 최악임",
+            "The worst experience ( Uzbeknet)",
+            "I am flight attendant and this app is worst",
+            "싼 이유가 있네요"
+          ],
+          "top_praises": [
+            "저렴하고 데이터 품질 굿",
+            "사용이 불가능한 수준",
+            "СПАСИБО веку современных технологий!!",
+            "아르헨티나에서",
+            "남아메리카 이심"
+          ]
+        },
+        "recent_reviews_count": 20
+      },
+      {
+        "platform": "Android",
+        "app_name": "Airalo: eSIM 여행 & 인터넷",
+        "version": "",
+        "updated": "2026. 3. 6.",
+        "release_notes": "",
+        "rating": 4.434951305389404,
+        "rating_count": 152185,
+        "url": "https://play.google.com/store/apps/details?id=com.mobillium.airalo"
+      }
+    ]
+  },
+  {
+    "name": "Nomad",
+    "region": "international",
+    "summary": "Nomad는 태국 eSIM 자동 활성화 기능을 제공하지만 앱 내 상태 표시 제한으로 사용자 경험에 제약이 있으며, 200+ 목적지 지원으로 글로벌 커버리지를 강화하고 있음",
+    "ux_changes": 1,
+    "new_features": 1,
+    "pricing": 0,
+    "other": 1,
+    "app_info": [
+      {
+        "platform": "iOS",
+        "app_name": "Nomad eSIM: Travel, like local",
+        "version": "10.9.0",
+        "updated": "2026-03-12T02:33:04Z",
+        "release_notes": "- 주간 승부 행사를 소개합니다! 매주 체크인하고 연속 체크인을 쌓아 다음 여행을 위한 독점 eSIM 데이터 보상을 받아보세요.",
+        "rating": 4.74324,
+        "rating_count": 74,
+        "url": "https://apps.apple.com/us/app/id1521602300"
+      },
+      {
+        "platform": "Android",
+        "app_name": "Nomad eSIM: Prepaid Data Plan",
+        "version": "",
+        "updated": "2026. 3. 11.",
+        "release_notes": "AF_initDataCallback({key: 'ds:6', hash: '27', data:[null,[null,null,null,[],0,[\"qgIMCgoKBlNUUkVBTRoA\"]]], sideChannel: {}});",
+        "rating": 4.7349395751953125,
+        "rating_count": 12058,
+        "url": "https://play.google.com/store/apps/details?id=com.lotusflare.nomad.mobile.android"
+      }
+    ]
+  }
+]
