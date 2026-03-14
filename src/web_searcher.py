@@ -17,9 +17,10 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 GOOGLE_CSE_ID = os.environ.get("GOOGLE_CSE_ID", "")
 
 
-def search_competitor(competitor: dict, days_back: int = 7) -> list[dict]:
-    """경쟁사에 대한 최근 정보를 웹에서 검색합니다."""
+def search_competitor(competitor: dict, days_back: int = 7, previous_urls: set[str] = None) -> list[dict]:
+    """경쟁사에 대한 최근 정보를 웹에서 검색합니다. 이전 주 URL은 제외합니다."""
     comp_name = competitor.get("name", "")
+    prev_urls = previous_urls or set()
     all_results = []
 
     for keyword in competitor.get("keywords", []):
@@ -27,18 +28,25 @@ def search_competitor(competitor: dict, days_back: int = 7) -> list[dict]:
         all_results.extend(results)
         time.sleep(1)  # Rate limiting
 
-    # 중복 제거 + 무관한 도메인 필터링 + 관련성 필터링
+    # 중복 제거 + 무관한 도메인 필터링 + 관련성 필터링 + 전주 중복 제거
     seen_urls = set()
     unique_results = []
+    skipped_prev = 0
     for r in all_results:
         url = r["url"]
         if url in seen_urls or _should_skip_url(url):
+            continue
+        if url in prev_urls:
+            skipped_prev += 1
             continue
         if not _is_relevant_result(r, comp_name):
             logger.debug(f"  관련성 낮은 결과 제외: {r['title'][:60]}")
             continue
         seen_urls.add(url)
         unique_results.append(r)
+
+    if skipped_prev:
+        logger.info(f"  [{comp_name}] 전주 중복 {skipped_prev}건 제외")
 
     return unique_results
 

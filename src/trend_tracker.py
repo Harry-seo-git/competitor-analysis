@@ -28,6 +28,18 @@ def load_history(history_dir: str) -> list[dict]:
         return []
 
 
+def load_previous_urls(history_dir: str) -> set[str]:
+    """이전 분석에서 사용된 URL 목록을 로드합니다 (중복 방지용)."""
+    previous = load_history(history_dir)
+    urls = set()
+    for entry in previous:
+        for url in entry.get("used_urls", []):
+            urls.add(url)
+    if urls:
+        logger.info(f"이전 주 사용 URL {len(urls)}개 로드 (중복 체크용)")
+    return urls
+
+
 def save_history(analyses: list[dict], history_dir: str) -> None:
     """현재 분석 결과를 히스토리로 저장합니다."""
     history_path = Path(history_dir)
@@ -36,6 +48,13 @@ def save_history(analyses: list[dict], history_dir: str) -> None:
     # 직렬화 가능한 데이터만 저장
     serializable = []
     for a in analyses:
+        # 분석에 사용된 URL 수집 (중복 체크용)
+        used_urls = set()
+        for key in ("ux_changes", "new_features", "pricing", "other"):
+            for item in a.get(key, []):
+                if isinstance(item, dict) and item.get("source_url"):
+                    used_urls.add(item["source_url"])
+
         entry = {
             "name": a.get("name", ""),
             "region": a.get("region", ""),
@@ -45,6 +64,7 @@ def save_history(analyses: list[dict], history_dir: str) -> None:
             "pricing": len(a.get("pricing", [])),
             "other": len(a.get("other", [])),
             "app_info": a.get("app_info", []),
+            "used_urls": list(used_urls),
         }
         serializable.append(entry)
 

@@ -19,7 +19,7 @@ from pricing_monitor import collect_pricing, generate_comparison_table
 from report_generator import generate_report, save_report
 from site_snapshot import monitor_all_sites
 from slack_notifier import send_report_to_slack
-from trend_tracker import load_history, save_history, compare_with_previous
+from trend_tracker import load_history, load_previous_urls, save_history, compare_with_previous
 from web_searcher import fetch_pages_for_results, search_competitor
 
 logging.basicConfig(
@@ -50,14 +50,18 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
     logger.info("=== 웹사이트 스냅샷 수집 ===")
     site_changes = monitor_all_sites(competitors)
 
-    # 4. 경쟁사별 웹 검색 → 페이지 수집 → LLM 분석
+    # 4. 이전 주 사용 URL 로드 (중복 방지)
+    history_dir = str(PROJECT_ROOT / "data" / "history")
+    previous_urls = load_previous_urls(history_dir)
+
+    # 5. 경쟁사별 웹 검색 → 페이지 수집 → LLM 분석
     all_analyses = []
     errors = []
     for comp in competitors:
         logger.info(f"[{comp['name']}] 검색 중...")
         try:
-            # 웹 검색
-            search_results = search_competitor(comp)
+            # 웹 검색 (이전 주 URL 제외)
+            search_results = search_competitor(comp, previous_urls=previous_urls)
             logger.info(f"  검색 결과: {len(search_results)}건")
 
             # 상위 결과의 페이지 본문 수집
@@ -87,33 +91,32 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
         # API rate limit 방지
         time.sleep(3)
 
-    # 5. 전략 제안 생성
+    # 6. 전략 제안 생성
     suggestions = generate_suggestions(all_analyses)
 
-    # 6. 트렌드 비교 (이전 주 대비)
-    history_dir = str(PROJECT_ROOT / "data" / "history")
+    # 7. 트렌드 비교 (이전 주 대비)
     previous = load_history(history_dir)
     trend = compare_with_previous(all_analyses, previous)
     save_history(all_analyses, history_dir)
 
-    # 7. 요금제 비교 수집
+    # 8. 요금제 비교 수집
     logger.info("=== 요금제 정보 수집 ===")
     pricing_data = collect_pricing(competitors)
     pricing_table = generate_comparison_table(pricing_data)
 
-    # 8. 리포트 생성
+    # 9. 리포트 생성
     report = generate_report(all_analyses, suggestions, backend, trend=trend, pricing_table=pricing_table)
     reports_dir = str(PROJECT_ROOT / "reports")
     report_path = save_report(report, output_dir=reports_dir)
     logger.info(f"리포트 생성 완료: {report_path}")
 
-    # 9. 대시보드 생성
+    # 10. 대시보드 생성
     dashboard_path = generate_dashboard(
         all_analyses, suggestions, backend, trend=trend, output_dir=reports_dir,
     )
     logger.info(f"대시보드 생성 완료: {dashboard_path}")
 
-    # 10. Slack 전송
+    # 11. Slack 전송
     if not skip_slack:
         success = send_report_to_slack(
             all_analyses, suggestions, backend, trend=trend, errors=errors
