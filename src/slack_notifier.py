@@ -241,7 +241,8 @@ def _build_suggestions_message(suggestions: list[dict]) -> dict:
     ))
     blocks.append(_context(
         "⚠️ 본 리포트는 AI 기반 자동 분석 결과로, 부정확하거나 누락된 정보가 포함될 수 있습니다. "
-        "주요 내용은 원문 링크를 통해 반드시 확인해 주세요."
+        "주요 내용은 원문 링크를 통해 반드시 확인해 주세요.\n"
+        "💬 리포트 관련 문의: <@harry>"
     ))
 
     return {"blocks": blocks}
