@@ -206,7 +206,7 @@ def _build_competitor_card(comp: dict) -> str:
                 neg_pct = sentiment["negative"] / total * 100
                 sentiment_html += f'''
                 <div style="font-size:12px;color:#94a3b8;margin-top:8px;">
-                    {app.get("platform","")} 리뷰 감성 (평균 ⭐{sentiment.get("avg_rating", 0)})
+                    {html.escape(app.get("platform",""))} 리뷰 감성 (평균 ⭐{sentiment.get("avg_rating", 0)})
                     <div class="sentiment-bar">
                         <div class="sentiment-pos" style="width:{pos_pct}%"></div>
                         <div class="sentiment-neu" style="width:{neu_pct}%"></div>
@@ -217,7 +217,7 @@ def _build_competitor_card(comp: dict) -> str:
     region_emoji = "🇰🇷" if region == "domestic" else "🌏"
 
     return f'''
-    <div class="card comp-card" data-region="{region}">
+    <div class="card comp-card" data-region="{html.escape(region)}">
       <h2>{region_emoji} {name} {threat_html}</h2>
       <div style="color:#94a3b8;font-size:13px;margin-bottom:12px;">{summary}</div>
       <div style="margin-bottom:12px;">{links_html}</div>
@@ -240,10 +240,10 @@ def _build_trend_table(trend: dict) -> str:
 
         version_info = ""
         for vc in t.get("version_changes", []):
-            version_info += f'<div class="tag">{vc}</div>'
+            version_info += f'<div class="tag">{html.escape(vc)}</div>'
 
         rows += f'''<tr>
-            <td><strong>{name}</strong></td>
+            <td><strong>{html.escape(name)}</strong></td>
             <td>{t.get("current_total", 0)}건</td>
             <td>{t.get("previous_total", 0)}건</td>
             <td><span class="badge {badge_class}">{arrow} {diff_text}</span></td>

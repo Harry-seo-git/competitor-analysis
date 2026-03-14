@@ -20,7 +20,7 @@ from report_generator import generate_report, save_report
 from site_snapshot import monitor_all_sites
 from slack_notifier import send_report_to_slack
 from trend_tracker import (
-    load_history, load_previous_urls, load_rating_history, load_release_history,
+    load_history, load_previous_urls, load_trend_histories,
     save_history, compare_with_previous,
 )
 from web_searcher import fetch_pages_for_results, search_competitor
@@ -120,8 +120,7 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
     logger.info(f"리포트 생성 완료: {report_path}")
 
     # 10. 대시보드 생성
-    rating_history = load_rating_history(history_dir)
-    release_history = load_release_history(history_dir)
+    rating_history, release_history = load_trend_histories(history_dir)
     dashboard_path = generate_dashboard(
         all_analyses, suggestions, backend,
         trend=trend, output_dir=reports_dir,
