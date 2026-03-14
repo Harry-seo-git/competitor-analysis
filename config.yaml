@@ -10,13 +10,13 @@ competitors:
       keywords: ["로밍도깨비 eSIM", "로밍도깨비 업데이트", "로밍도깨비 UX"]
     - name: "도시락eSIM"
       url: "https://www.dosirakesim.com"
-      keywords: ["도시락eSIM 업데이트", "도시락eSIM UX", "도시락이심"]
+      keywords: ["도시락eSIM 업데이트", "도시락eSIM UX", "도시락eSIM 로밍"]
     - name: "플릿"
       url: "https://flitmobile.com/"
       keywords: ["플릿 eSIM 업데이트", "플릿 eSIM UX", "플릿이심"]
     - name: "이심이지"
       url: "https://esimeasy.co.kr/"
-      keywords: ["이심이지 업데이트", "이심이지 UX", "esimeasy"]
+      keywords: ["이심이지 eSIM", "이심이지 업데이트", "esimeasy eSIM"]
 
   international:
     - name: "Saily"
