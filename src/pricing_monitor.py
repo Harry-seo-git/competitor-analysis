@@ -48,8 +48,8 @@ def fetch_pricing_page(url: str) -> str:
 
 def extract_pricing_with_llm(competitor_name: str, page_text: str) -> list[dict]:
     """LLM을 사용하여 페이지 텍스트에서 요금제 정보를 추출합니다."""
-    api_key = os.environ.get("GEMINI_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key or not page_text:
+    has_llm = os.environ.get("GEMINI_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+    if not has_llm or not page_text:
         return []
 
     prompt = f"""아래는 '{competitor_name}' eSIM 서비스의 웹페이지 텍스트입니다.
@@ -86,46 +86,54 @@ def extract_pricing_with_llm(competitor_name: str, page_text: str) -> list[dict]
 
 
 def _extract_with_gemini(prompt: str) -> list[dict]:
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash:generateContent?key={os.environ['GEMINI_API_KEY']}"
-    )
-    resp = requests.post(
-        url,
-        headers={"Content-Type": "application/json"},
-        json={
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
-        },
-        timeout=60,
-    )
-    resp.raise_for_status()
-    text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-    data = json.loads(text)
-    return data.get("plans", [])
+    try:
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"gemini-2.0-flash:generateContent?key={os.environ['GEMINI_API_KEY']}"
+        )
+        resp = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        data = json.loads(text)
+        return data.get("plans", [])
+    except Exception as e:
+        logger.error(f"Gemini 요금 추출 실패: {e}")
+        return []
 
 
 def _extract_with_claude(prompt: str) -> list[dict]:
-    resp = requests.post(
-        "https://api.anthropic.com/v1/messages",
-        headers={
-            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
-            "content-type": "application/json",
-            "anthropic-version": "2023-06-01",
-        },
-        json={
-            "model": "claude-sonnet-4-20250514",
-            "max_tokens": 2048,
-            "messages": [{"role": "user", "content": prompt}],
-        },
-        timeout=60,
-    )
-    resp.raise_for_status()
-    text = resp.json()["content"][0]["text"]
-    if "```json" in text:
-        text = text.split("```json")[1].split("```")[0]
-    data = json.loads(text.strip())
-    return data.get("plans", [])
+    try:
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+                "content-type": "application/json",
+                "anthropic-version": "2023-06-01",
+            },
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 2048,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        text = resp.json()["content"][0]["text"]
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0]
+        data = json.loads(text.strip())
+        return data.get("plans", [])
+    except Exception as e:
+        logger.error(f"Claude 요금 추출 실패: {e}")
+        return []
 
 
 def collect_pricing(competitors: list[dict]) -> dict[str, list[dict]]:

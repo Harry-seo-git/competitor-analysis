@@ -116,7 +116,7 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
     )
     logger.info(f"대시보드 생성 완료: {dashboard_path}")
 
-    # 8. Slack 전송
+    # 10. Slack 전송
     if not skip_slack:
         success = send_report_to_slack(
             all_analyses, suggestions, backend, trend=trend, errors=errors

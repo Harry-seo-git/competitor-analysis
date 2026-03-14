@@ -4,6 +4,7 @@
 외부 의존성 없이 순수 HTML/CSS/JS로 구현됩니다.
 """
 
+import html
 import json
 import logging
 from datetime import datetime
@@ -132,9 +133,9 @@ function filterRegion(region) {
 
 def _build_competitor_card(comp: dict) -> str:
     """경쟁사 카드 HTML을 생성합니다."""
-    name = comp.get("name", "")
+    name = html.escape(comp.get("name", ""))
     region = comp.get("region", "")
-    summary = comp.get("summary", "특이사항 없음")
+    summary = html.escape(comp.get("summary", "특이사항 없음"))
 
     # 위협도 배지
     threat = comp.get("threat_score", {})
@@ -168,7 +169,7 @@ def _build_competitor_card(comp: dict) -> str:
         changes_html += f'<h3>{label} ({len(items)})</h3>'
         for item in items[:3]:
             if isinstance(item, dict):
-                title = item.get("title", "")[:80]
+                title = html.escape(item.get("title", "")[:80])
                 changes_html += f'<div class="tag">{title}</div> '
 
     if not changes_html:
