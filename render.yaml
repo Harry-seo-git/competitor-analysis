@@ -1,0 +1,19 @@
+# Render 배포 설정 - 유심사 경쟁사 분석 자동화
+# 매주 월요일 09:30 KST (00:30 UTC) 실행
+
+services:
+  - type: cron
+    name: competitor-analysis
+    runtime: python
+    schedule: "30 0 * * 1"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python src/main.py
+    envVars:
+      - key: SERPAPI_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SLACK_WEBHOOK_URL
+        sync: false
+      - key: RENDER
+        value: "true"

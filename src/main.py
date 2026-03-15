@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -9,17 +10,23 @@ from pathlib import Path
 # 프로젝트 루트 디렉토리 기준으로 경로 설정
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+# Render 환경 감지 (render.yaml에서 RENDER=true 설정)
+IS_RENDER = os.environ.get("RENDER", "").lower() == "true"
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app_monitor import fetch_all_app_info
 from config_loader import get_all_competitors, load_config
 from dashboard import generate_dashboard
-from llm_analyzer import analyze_competitor, generate_suggestions, get_active_backend
-from pricing_monitor import collect_pricing, generate_comparison_table
+from llm_analyzer import analyze_competitor, generate_executive_summary, generate_suggestions, get_active_backend
+from pricing_monitor import collect_pricing, detect_pricing_changes, generate_comparison_table
 from report_generator import generate_report, save_report
 from site_snapshot import monitor_all_sites
 from slack_notifier import send_report_to_slack
-from trend_tracker import load_history, load_previous_urls, save_history, compare_with_previous
+from trend_tracker import (
+    load_history, load_previous_urls, load_trend_histories,
+    save_history, compare_with_previous,
+)
 from web_searcher import fetch_pages_for_results, search_competitor
 
 logging.basicConfig(
@@ -32,6 +39,8 @@ logger = logging.getLogger(__name__)
 def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
     """경쟁사 분석을 실행하고 리포트를 생성합니다."""
     logger.info("=== 유심사 경쟁사 분석 시작 ===")
+    if IS_RENDER:
+        logger.info("Render 환경 감지 - 파일 저장은 임시이며 재배포 시 초기화됩니다.")
 
     # 1. 설정 로드
     if config_path is None:
@@ -50,9 +59,10 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
     logger.info("=== 웹사이트 스냅샷 수집 ===")
     site_changes = monitor_all_sites(competitors)
 
-    # 4. 이전 주 사용 URL 로드 (중복 방지)
+    # 4. 히스토리 로드 (트렌드 비교 + 중복 URL 제거에 공통 사용)
     history_dir = str(PROJECT_ROOT / "data" / "history")
-    previous_urls = load_previous_urls(history_dir)
+    previous_history = load_history(history_dir)
+    previous_urls = load_previous_urls(previous_history)
 
     # 5. 경쟁사별 웹 검색 → 페이지 수집 → LLM 분석
     all_analyses = []
@@ -91,35 +101,56 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
         # API rate limit 방지
         time.sleep(3)
 
-    # 6. 전략 제안 생성
+    # 6. Executive Summary + 전략 제안 생성
+    executive_summary = generate_executive_summary(all_analyses)
     suggestions = generate_suggestions(all_analyses)
 
     # 7. 트렌드 비교 (이전 주 대비)
-    previous = load_history(history_dir)
-    trend = compare_with_previous(all_analyses, previous)
-    save_history(all_analyses, history_dir)
+    trend = compare_with_previous(all_analyses, previous_history)
+    try:
+        save_history(all_analyses, history_dir)
+    except OSError as e:
+        logger.warning(f"히스토리 저장 실패 (Render 환경에서는 정상): {e}")
 
-    # 8. 요금제 비교 수집
+    # 8. 요금제 비교 수집 + 가격 변동 감지
     logger.info("=== 요금제 정보 수집 ===")
     pricing_data = collect_pricing(competitors)
-    pricing_table = generate_comparison_table(pricing_data)
+    price_changes = detect_pricing_changes(pricing_data)
+    pricing_table = generate_comparison_table(pricing_data, price_changes=price_changes)
 
     # 9. 리포트 생성
-    report = generate_report(all_analyses, suggestions, backend, trend=trend, pricing_table=pricing_table)
+    report = generate_report(
+        all_analyses, suggestions, backend,
+        trend=trend, pricing_table=pricing_table,
+        executive_summary=executive_summary,
+    )
     reports_dir = str(PROJECT_ROOT / "reports")
-    report_path = save_report(report, output_dir=reports_dir)
-    logger.info(f"리포트 생성 완료: {report_path}")
+    report_path = None
+    try:
+        report_path = save_report(report, output_dir=reports_dir)
+        logger.info(f"리포트 생성 완료: {report_path}")
+    except OSError as e:
+        logger.warning(f"리포트 파일 저장 실패 (Slack 전송은 계속 진행): {e}")
 
     # 10. 대시보드 생성
-    dashboard_path = generate_dashboard(
-        all_analyses, suggestions, backend, trend=trend, output_dir=reports_dir,
-    )
-    logger.info(f"대시보드 생성 완료: {dashboard_path}")
+    rating_history, release_history = load_trend_histories(history_dir)
+    try:
+        dashboard_path = generate_dashboard(
+            all_analyses, suggestions, backend,
+            trend=trend, output_dir=reports_dir,
+            executive_summary=executive_summary, price_changes=price_changes,
+            rating_history=rating_history, release_history=release_history,
+        )
+        logger.info(f"대시보드 생성 완료: {dashboard_path}")
+    except OSError as e:
+        logger.warning(f"대시보드 파일 저장 실패 (Slack 전송은 계속 진행): {e}")
 
     # 11. Slack 전송
     if not skip_slack:
         success = send_report_to_slack(
-            all_analyses, suggestions, backend, trend=trend, errors=errors
+            all_analyses, suggestions, backend,
+            trend=trend, errors=errors,
+            executive_summary=executive_summary, price_changes=price_changes,
         )
         if success:
             logger.info("Slack 전송 성공")
@@ -127,7 +158,7 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
             logger.warning("Slack 전송 실패 - 리포트 파일은 저장되었습니다.")
 
     logger.info("=== 경쟁사 분석 완료 ===")
-    return report_path
+    return report_path or "리포트 생성 완료 (파일 저장 생략)"
 
 
 def main():

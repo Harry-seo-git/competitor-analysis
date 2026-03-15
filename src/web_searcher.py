@@ -3,7 +3,7 @@
 import logging
 import os
 import time
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -222,7 +222,7 @@ def fetch_page_content(url: str, max_length: int = 5000) -> dict:
 
 
 # 스크래핑이 차단되거나 eSIM/로밍과 무관한 도메인
-SKIP_DOMAINS = [
+_SKIP_DOMAINS = frozenset({
     # SNS / 동영상
     "reddit.com", "facebook.com", "instagram.com", "tiktok.com",
     "twitter.com", "x.com", "linkedin.com", "threads.com",
@@ -245,12 +245,21 @@ SKIP_DOMAINS = [
     "hanatour.com", "realhouse.hu", "rpakr.com",
     "tesztevok.hu", "cybernews.com", "purrweb.com",
     "contactcentertechnologyinsights.com", "vocus.cc",
-]
+})
 
 
 def _should_skip_url(url: str) -> bool:
     """스크래핑이 차단되는 도메인인지 확인합니다."""
-    return any(domain in url for domain in SKIP_DOMAINS)
+    try:
+        hostname = urlparse(url).hostname or ""
+    except ValueError:
+        return False
+    # "www.reddit.com" → "reddit.com" 등 2단계 도메인까지 체크
+    parts = hostname.split(".")
+    for i in range(len(parts)):
+        if ".".join(parts[i:]) in _SKIP_DOMAINS:
+            return True
+    return False
 
 
 def fetch_pages_for_results(search_results: list[dict], max_pages: int = 5) -> list[dict]:

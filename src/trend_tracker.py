@@ -28,11 +28,14 @@ def load_history(history_dir: str) -> list[dict]:
         return []
 
 
-def load_previous_urls(history_dir: str) -> set[str]:
-    """이전 분석에서 사용된 URL 목록을 로드합니다 (중복 방지용)."""
-    previous = load_history(history_dir)
+def load_previous_urls(history: list[dict]) -> set[str]:
+    """이전 분석 결과에서 사용된 URL 목록을 추출합니다 (중복 방지용).
+
+    Args:
+        history: load_history()로 이미 로드한 히스토리 데이터
+    """
     urls = set()
-    for entry in previous:
+    for entry in history:
         for url in entry.get("used_urls", []):
             urls.add(url)
     if urls:
@@ -41,7 +44,11 @@ def load_previous_urls(history_dir: str) -> set[str]:
 
 
 def save_history(analyses: list[dict], history_dir: str) -> None:
-    """현재 분석 결과를 히스토리로 저장합니다."""
+    """현재 분석 결과를 히스토리로 저장합니다.
+
+    Raises:
+        OSError: 디렉토리 생성 또는 파일 쓰기 실패 시
+    """
     history_path = Path(history_dir)
     history_path.mkdir(parents=True, exist_ok=True)
 
@@ -55,6 +62,17 @@ def save_history(analyses: list[dict], history_dir: str) -> None:
                 if isinstance(item, dict) and item.get("source_url"):
                     used_urls.add(item["source_url"])
 
+        # 앱 평점 정보 추출 (추이 추적용)
+        app_ratings = []
+        for app in a.get("app_info", []):
+            if app.get("rating"):
+                app_ratings.append({
+                    "platform": app.get("platform", ""),
+                    "rating": app.get("rating", 0),
+                    "rating_count": app.get("rating_count", 0),
+                    "version": app.get("version", ""),
+                })
+
         entry = {
             "name": a.get("name", ""),
             "region": a.get("region", ""),
@@ -64,6 +82,7 @@ def save_history(analyses: list[dict], history_dir: str) -> None:
             "pricing": len(a.get("pricing", [])),
             "other": len(a.get("other", [])),
             "app_info": a.get("app_info", []),
+            "app_ratings": app_ratings,
             "used_urls": list(used_urls),
         }
         serializable.append(entry)
@@ -74,10 +93,75 @@ def save_history(analyses: list[dict], history_dir: str) -> None:
     logger.info(f"히스토리 저장: {filepath}")
 
     # 오래된 히스토리 정리 (최근 12주만 유지)
-    files = sorted(history_path.glob("analysis_*.json"), reverse=True)
-    for old_file in files[12:]:
-        old_file.unlink()
-        logger.info(f"오래된 히스토리 삭제: {old_file.name}")
+    try:
+        files = sorted(history_path.glob("analysis_*.json"), reverse=True)
+        for old_file in files[12:]:
+            old_file.unlink()
+            logger.info(f"오래된 히스토리 삭제: {old_file.name}")
+    except OSError as e:
+        logger.warning(f"오래된 히스토리 정리 실패: {e}")
+
+
+def load_trend_histories(history_dir: str, weeks: int = 12) -> tuple[dict[str, list[dict]], dict[str, list[dict]]]:
+    """최근 N주간의 앱 평점 추이 + 릴리즈 이력을 한 번에 로드합니다.
+
+    파일을 한 번만 읽어 두 가지 히스토리를 동시에 추출합니다.
+
+    Returns:
+        (rating_history, release_history)
+        - rating_history: {경쟁사명: [{"date": "2026-03-07", "iOS": 4.5, "Android": 4.2}, ...]}
+        - release_history: {경쟁사명: [{"date": "2026-03-07", "ux_changes": 2, "new_features": 1, ...}, ...]}
+    """
+    history_path = Path(history_dir)
+    if not history_path.exists():
+        return {}, {}
+
+    files = sorted(history_path.glob("analysis_*.json"), reverse=True)[:weeks]
+    files.reverse()  # 오래된 것부터 정렬
+
+    rating_history: dict[str, list[dict]] = {}
+    release_history: dict[str, list[dict]] = {}
+
+    for f in files:
+        # 파일명에서 날짜 추출: analysis_20260314_010604.json
+        date_str = f.stem.replace("analysis_", "")[:8]
+        if len(date_str) < 8:
+            continue
+        date_label = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+
+        try:
+            entries = json.loads(f.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, IOError):
+            continue
+
+        for entry in entries:
+            name = entry.get("name", "")
+            if not name:
+                continue
+
+            # 평점 추이
+            ratings_data = {"date": date_label}
+            for app_rating in entry.get("app_ratings", []):
+                platform = app_rating.get("platform", "")
+                rating = app_rating.get("rating", 0)
+                if platform and rating:
+                    ratings_data[platform] = rating
+            if len(ratings_data) > 1:  # date 외에 데이터가 있을 때만
+                rating_history.setdefault(name, []).append(ratings_data)
+
+            # 릴리즈 이력
+            ux = entry.get("ux_changes", 0)
+            feat = entry.get("new_features", 0)
+            pricing = entry.get("pricing", 0)
+            release_history.setdefault(name, []).append({
+                "date": date_label,
+                "ux_changes": ux,
+                "new_features": feat,
+                "pricing": pricing,
+                "total": ux + feat + pricing,
+            })
+
+    return rating_history, release_history
 
 
 def compare_with_previous(current: list[dict], previous: list[dict]) -> dict:

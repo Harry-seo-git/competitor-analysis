@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
-ANALYSIS_PROMPT = """당신은 eSIM/로밍 서비스 시장의 전문 UX 분석가입니다.
+ANALYSIS_PROMPT = """당신은 eSIM/로밍 서비스 '유심사'의 경쟁 전략 분석가입니다.
 아래는 '{competitor_name}' 경쟁사에 대한 최근 웹 검색 결과와 페이지 내용입니다.
 
 ## 검색 결과
@@ -23,40 +23,66 @@ ANALYSIS_PROMPT = """당신은 eSIM/로밍 서비스 시장의 전문 UX 분석�
 
 ## 분석 요청
 
-⚠️ 중요: 검색 결과 중 '{competitor_name}'과 직접적으로 관련이 없는 콘텐츠(다른 서비스, 무관한 주제 등)는 반드시 무시하세요.
-'{competitor_name}'의 eSIM/로밍 서비스와 직접 관련된 정보만 분석 대상에 포함하세요.
+⚠️ 중요: '{competitor_name}'의 eSIM/로밍 서비스와 직접 관련된 정보만 분석하세요. 무관한 콘텐츠는 무시하세요.
 
-위 정보를 바탕으로 다음을 분석해주세요:
+위 정보를 바탕으로 **유심사 관점에서** 다음을 분석해주세요:
 
-1. **UX/UI 변경사항**: 앱이나 웹사이트의 디자인, 사용자 경험 관련 변화 (가장 중요)
+1. **UX/UI 변경사항**: 앱이나 웹사이트의 디자인, 사용자 경험 관련 변화
 2. **새로운 기능**: 새로 출시되거나 업데이트된 기능
 3. **요금/프로모션**: 가격 변경, 할인, 이벤트
 4. **기타 주요 동향**: 지역 확대, 파트너십 등
 
 각 항목에 대해:
 - 변경 내용을 구체적으로 설명
-- 유심사에 미치는 영향 또는 시사점 한 줄 제시
-- 해당 정보가 없으면 "변경사항 없음"으로 표시
+- **유심사가 취해야 할 대응 액션** 1줄 제시 (단순 "주시" 대신 구체적 액션 권장)
+- 해당 정보가 없으면 빈 배열로 반환
 - 관련성이 불확실한 정보는 포함하지 마세요
 
 반드시 아래 JSON 형식으로만 응답하세요:
 {{
-  "ux_changes": [{{"title": "변경 제목", "description": "구체적 설명", "impact": "유심사 시사점", "source_url": "출처 URL"}}],
-  "new_features": [{{"title": "기능명", "description": "설명", "impact": "시사점", "source_url": "URL"}}],
-  "pricing": [{{"title": "변경 내용", "description": "설명", "impact": "시사점", "source_url": "URL"}}],
-  "other": [{{"title": "제목", "description": "설명", "impact": "시사점", "source_url": "URL"}}],
+  "ux_changes": [{{"title": "변경 제목", "description": "구체적 설명", "impact": "유심사 권장 액션", "source_url": "출처 URL"}}],
+  "new_features": [{{"title": "기능명", "description": "설명", "impact": "유심사 권장 액션", "source_url": "URL"}}],
+  "pricing": [{{"title": "변경 내용", "description": "설명", "impact": "유심사 권장 액션", "source_url": "URL"}}],
+  "other": [{{"title": "제목", "description": "설명", "impact": "유심사 권장 액션", "source_url": "URL"}}],
   "threat_score": {{
     "score": 1~10,
     "level": "높음/중간/낮음",
-    "reason": "위협도 판단 근거 1줄"
+    "reason": "위협도 판단 근거 1줄",
+    "signal_type": "시그널/노이즈"
   }},
-  "summary": "이 경쟁사의 이번 주 핵심 동향 1-2줄 요약"
+  "summary": "이 경쟁사의 이번 주 핵심 동향과 유심사 대응 포인트 1-2줄"
 }}
 
-threat_score 기준:
-- 높음(7-10): 요금 인하, 대규모 UX 개편, 유심사 직접 경쟁 기능 출시
-- 중간(4-6): 신기능 출시, 일부 UI 변경, 프로모션
-- 낮음(1-3): 경미한 변경, 특이사항 없음
+threat_score 기준 (시그널 vs 노이즈를 반드시 구분):
+- **시그널** (실제 위협, 즉각 대응 필요):
+  - 높음(7-10): 유심사와 직접 경쟁하는 가격 인하, 유심사에 없는 핵심 기능 출시, 대규모 UX 개편
+  - 중간(4-6): 유심사도 보유한 기능의 개선, 지역적 프로모션, 부분 UI 변경
+- **노이즈** (참고만, 즉각 대응 불필요):
+  - 낮음(1-3): 경미한 UI 수정, 유심사와 무관한 시장의 변화, 일반적 마케팅 활동, 루머성 정보
+"""
+
+EXECUTIVE_SUMMARY_PROMPT = """당신은 '유심사'의 전략 컨설턴트입니다.
+아래는 이번 주 경쟁사 분석 결과입니다.
+
+{all_analyses_text}
+
+위 분석을 바탕으로 경영진을 위한 핵심 요약을 작성해주세요.
+
+반드시 아래 JSON 형식으로만 응답하세요:
+{{
+  "headline": "이번 주 경쟁 환경을 한 줄로 요약 (30자 이내)",
+  "top_threats": [
+    {{"competitor": "경쟁사명", "action": "경쟁사 동향 요약", "impact": "유심사에 미치는 영향", "urgency": "즉시대응/주시/참고"}}
+  ],
+  "opportunities": [
+    {{"area": "기회 영역", "description": "구체적 기회 설명", "action": "유심사 권장 액션"}}
+  ],
+  "risk_level": "높음/보통/낮음",
+  "risk_reason": "위험도 판단 근거 1줄"
+}}
+
+top_threats는 최대 3개, opportunities는 최대 2개만 선별해주세요.
+정보가 부족하면 빈 배열로 반환하세요.
 """
 
 SUGGESTION_PROMPT = """당신은 '유심사'의 전략 컨설턴트입니다.
@@ -106,29 +132,65 @@ def analyze_competitor(competitor_name: str, search_results: list[dict], page_co
         return _analyze_with_fallback(competitor_name, search_results, page_contents)
 
 
+def generate_executive_summary(all_analyses: list[dict]) -> dict:
+    """전체 분석 결과를 경영진용 핵심 요약으로 생성합니다."""
+    backend = get_active_backend()
+
+    analyses_text = _format_analyses_text(all_analyses)
+
+    if not analyses_text.strip() or all(a.get("summary", "") == "이번 주 특이사항 없음" for a in all_analyses):
+        return {
+            "headline": "이번 주 특별한 경쟁사 동향 없음",
+            "top_threats": [],
+            "opportunities": [],
+            "risk_level": "낮음",
+            "risk_reason": "경쟁사 활동이 감지되지 않았습니다.",
+        }
+
+    if backend != "claude":
+        return _fallback_executive_summary(all_analyses)
+
+    prompt = EXECUTIVE_SUMMARY_PROMPT.format(all_analyses_text=analyses_text)
+    result = _call_claude(prompt)
+    parsed = _parse_json_response(result)
+    if parsed and "headline" in parsed:
+        return parsed
+    return _fallback_executive_summary(all_analyses)
+
+
+def _fallback_executive_summary(all_analyses: list[dict]) -> dict:
+    """LLM 없이 키워드 기반 Executive Summary를 생성합니다."""
+    active = [a for a in all_analyses if a.get("ux_changes") or a.get("new_features") or a.get("pricing")]
+    high_threats = [a for a in all_analyses if a.get("threat_score", {}).get("score", 0) >= 7]
+
+    headline = f"경쟁사 {len(active)}곳에서 변화 감지" if active else "이번 주 특별한 동향 없음"
+
+    threats = []
+    for a in sorted(all_analyses, key=lambda x: x.get("threat_score", {}).get("score", 0), reverse=True)[:3]:
+        if a.get("ux_changes") or a.get("new_features") or a.get("pricing"):
+            threats.append({
+                "competitor": a["name"],
+                "action": a.get("summary", ""),
+                "impact": a.get("threat_score", {}).get("reason", "상세 확인 필요"),
+                "urgency": "즉시대응" if a.get("threat_score", {}).get("score", 0) >= 7 else "주시",
+            })
+
+    risk_level = "높음" if high_threats else ("보통" if active else "낮음")
+
+    return {
+        "headline": headline,
+        "top_threats": threats,
+        "opportunities": [],
+        "risk_level": risk_level,
+        "risk_reason": f"위협도 높은 경쟁사: {', '.join(a['name'] for a in high_threats)}" if high_threats else "큰 위협 없음",
+    }
+
+
 def generate_suggestions(all_analyses: list[dict]) -> list[dict]:
     """전체 분석 결과를 바탕으로 전략 제안을 생성합니다."""
     backend = get_active_backend()
 
-    analyses_text = ""
-    for a in all_analyses:
-        analyses_text += f"\n### {a['name']}\n"
-        analyses_text += f"요약: {a.get('summary', '정보 없음')}\n"
-        for change in a.get("ux_changes", []):
-            if isinstance(change, dict):
-                analyses_text += f"- [UX] {change.get('title', '')}: {change.get('description', '')}\n"
-            elif isinstance(change, str):
-                analyses_text += f"- [UX] {change}\n"
-        for feat in a.get("new_features", []):
-            if isinstance(feat, dict):
-                analyses_text += f"- [기능] {feat.get('title', '')}: {feat.get('description', '')}\n"
-            elif isinstance(feat, str):
-                analyses_text += f"- [기능] {feat}\n"
-        for price in a.get("pricing", []):
-            if isinstance(price, dict):
-                analyses_text += f"- [요금] {price.get('title', '')}: {price.get('description', '')}\n"
-            elif isinstance(price, str):
-                analyses_text += f"- [요금] {price}\n"
+    analyses_text = _format_analyses_text(all_analyses)
 
     if not analyses_text.strip() or all(a.get("summary", "") == "이번 주 특이사항 없음" for a in all_analyses):
         return [{"priority": "낮음", "category": "모니터링", "action": "이번 주 특별한 경쟁사 동향이 감지되지 않았습니다. 정기적인 모니터링을 계속하세요.", "reason": "탐지된 변화 없음"}]
@@ -171,7 +233,7 @@ def _call_claude(prompt: str) -> str:
                 "anthropic-version": "2023-06-01",
             },
             json={
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-sonnet-4-6-20250514",
                 "max_tokens": 2048,
                 "messages": [{"role": "user", "content": prompt}],
             },
@@ -292,6 +354,24 @@ def _fallback_suggestions(all_analyses: list[dict]) -> list[dict]:
 # ──────────────────────────────────────────────
 # 유틸리티
 # ──────────────────────────────────────────────
+
+def _format_analyses_text(all_analyses: list[dict]) -> str:
+    """분석 결과를 LLM 프롬프트용 텍스트로 포맷합니다."""
+    parts = []
+    for a in all_analyses:
+        lines = [f"\n### {a['name']}", f"요약: {a.get('summary', '정보 없음')}"]
+        threat = a.get("threat_score", {})
+        if threat.get("score"):
+            lines.append(f"위협도: {threat.get('score')}/10 ({threat.get('level', '')}) - {threat.get('reason', '')}")
+        for key, label in [("ux_changes", "UX"), ("new_features", "기능"), ("pricing", "요금")]:
+            for item in a.get(key, []):
+                if isinstance(item, dict):
+                    lines.append(f"- [{label}] {item.get('title', '')}: {item.get('description', '')}")
+                elif isinstance(item, str):
+                    lines.append(f"- [{label}] {item}")
+        parts.append("\n".join(lines))
+    return "\n".join(parts)
+
 
 def _normalize_analysis(analysis: dict) -> None:
     """LLM 응답의 각 리스트 항목이 dict 형태인지 보장합니다."""

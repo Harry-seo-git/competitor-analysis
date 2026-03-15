@@ -110,9 +110,12 @@ def _load_previous_snapshot(name: str) -> dict:
 
 def _save_snapshot(name: str, snapshot: dict) -> None:
     """스냅샷을 저장합니다."""
-    SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
-    filepath = SNAPSHOTS_DIR / f"{_sanitize_name(name)}.json"
-    filepath.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+        filepath = SNAPSHOTS_DIR / f"{_sanitize_name(name)}.json"
+        filepath.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError as e:
+        logger.warning(f"스냅샷 저장 실패 ({name}): {e}")
 
 
 def detect_changes(name: str, current: dict) -> dict:

@@ -21,6 +21,8 @@ def send_report_to_slack(
     webhook_url: str = None,
     trend: dict = None,
     errors: list[dict] = None,
+    executive_summary: dict = None,
+    price_changes: list[dict] = None,
 ) -> bool:
     """구조화된 분석 데이터를 Slack Block Kit 메시지로 전송합니다."""
     url = webhook_url or SLACK_WEBHOOK_URL
@@ -35,6 +37,18 @@ def send_report_to_slack(
 
     # 메시지 1: 헤더 + 주간 요약
     messages.append(_build_summary_message(domestic, international, backend))
+
+    # 메시지 1.5: Executive Summary (있을 때만)
+    if executive_summary and executive_summary.get("headline"):
+        exec_msg = _build_executive_summary_message(executive_summary)
+        if exec_msg:
+            messages.append(exec_msg)
+
+    # 메시지 1.7: 가격 변동 알림 (있을 때만)
+    if price_changes:
+        price_msg = _build_price_changes_message(price_changes)
+        if price_msg:
+            messages.append(price_msg)
 
     # 메시지 2: 트렌드 비교 (이전 주 대비, 있을 때만)
     if trend and trend.get("has_previous"):
@@ -120,6 +134,69 @@ def _build_summary_message(domestic: list[dict], international: list[dict], back
     return {"blocks": blocks}
 
 
+def _build_executive_summary_message(exec_summary: dict) -> dict | None:
+    """Executive Summary Slack 메시지"""
+    if not exec_summary:
+        return None
+
+    risk_level = exec_summary.get("risk_level", "낮음")
+    risk_emoji = {"높음": "🔴", "보통": "🟡", "낮음": "🟢"}.get(risk_level, "⚪")
+
+    blocks = [
+        _header_block("🎯 Executive Summary"),
+        _divider(),
+        _section(
+            f"*{exec_summary.get('headline', '')}*\n\n"
+            f"{risk_emoji} 경쟁 위험도: *{risk_level}* — {exec_summary.get('risk_reason', '')}"
+        ),
+    ]
+
+    # 주요 위협
+    threats = exec_summary.get("top_threats", [])
+    if threats:
+        urgency_emoji = {"즉시대응": "🚨", "주시": "👀", "참고": "📌"}
+        threat_lines = ["*주요 위협*"]
+        for t in threats:
+            emoji = urgency_emoji.get(t.get("urgency", ""), "📌")
+            threat_lines.append(
+                f"{emoji} *{t.get('competitor', '')}*: {t.get('action', '')}\n"
+                f"    → _{t.get('impact', '')}_"
+            )
+        blocks.append(_section("\n".join(threat_lines)))
+
+    # 기회
+    opps = exec_summary.get("opportunities", [])
+    if opps:
+        opp_lines = ["*💡 기회 포착*"]
+        for o in opps:
+            opp_lines.append(f"• *{o.get('area', '')}*: {o.get('description', '')} → _{o.get('action', '')}_")
+        blocks.append(_section("\n".join(opp_lines)))
+
+    return {"blocks": blocks}
+
+
+def _build_price_changes_message(price_changes: list[dict]) -> dict | None:
+    """가격 변동 Slack 메시지"""
+    if not price_changes:
+        return None
+
+    blocks = [
+        _header_block("⚡ 가격 변동 감지"),
+        _divider(),
+    ]
+
+    lines = []
+    for c in price_changes:
+        lines.append(
+            f"*{c.get('competitor', '')}* ({c.get('destination', '')}) "
+            f"{c.get('data', '')} / {c.get('duration', '')}\n"
+            f"    ~{c.get('previous_price', '')}~ → *{c.get('current_price', '')}* {c.get('currency', '')}"
+        )
+
+    blocks.append(_section("\n\n".join(lines)))
+    return {"blocks": blocks}
+
+
 def _build_ux_highlight_message(all_analyses: list[dict]) -> dict | None:
     """UX 변경사항 하이라이트 메시지. 없으면 None 반환."""
     ux_items = []
@@ -179,7 +256,18 @@ def _build_competitor_message(title: str, competitors: list[dict]) -> dict:
             links.append(f"<{comp['play_store']}|Android>")
         link_text = f"  ({' · '.join(links)})" if links else ""
 
-        comp_text = f"*{name}*{link_text}\n> {summary}"
+        # 위협도 + 시그널/노이즈 표시
+        threat = comp.get("threat_score", {})
+        threat_score = threat.get("score", 0)
+        signal_type = threat.get("signal_type", "")
+        signal_label = ""
+        if signal_type == "시그널":
+            signal_label = " 🔔시그널"
+        elif signal_type == "노이즈":
+            signal_label = " 🔇노이즈"
+        threat_label = f" (위협도 {threat_score}/10{signal_label})" if threat_score else ""
+
+        comp_text = f"*{name}*{threat_label}{link_text}\n> {summary}"
 
         # 사이트 변경 감지 표시
         site_changes = comp.get("site_changes", {})

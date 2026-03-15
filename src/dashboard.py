@@ -68,6 +68,9 @@ tr:hover td { background: #334155; }
     <div class="subtitle">분석일: __GENERATED_AT__ | 엔진: __BACKEND__</div>
   </div>
 
+  <!-- Executive Summary -->
+  __EXECUTIVE_SUMMARY__
+
   <!-- 요약 통계 -->
   <div class="stat-grid">
     <div class="stat"><div class="value">__TOTAL_COMPETITORS__</div><div class="label">분석 경쟁사</div></div>
@@ -103,6 +106,15 @@ tr:hover td { background: #334155; }
       __APP_TABLE__
     </div>
   </div>
+
+  <!-- 앱 평점 추이 -->
+  __RATING_TREND_SECTION__
+
+  <!-- 기능 출시 속도 -->
+  __RELEASE_VELOCITY_SECTION__
+
+  <!-- 가격 변동 -->
+  __PRICE_CHANGES_SECTION__
 
   <!-- 전략 제안 -->
   <div class="section">
@@ -143,7 +155,13 @@ def _build_competitor_card(comp: dict) -> str:
     threat_level = threat.get("level", "")
     threat_score = threat.get("score", "")
     threat_class = {"높음": "badge-high", "중간": "badge-mid", "낮음": "badge-low"}.get(threat_level, "badge-stable")
-    threat_html = f'<span class="badge {threat_class}">위협도 {threat_score}/10</span>' if threat_score else ""
+    signal_type = threat.get("signal_type", "")
+    signal_badge = ""
+    if signal_type == "노이즈":
+        signal_badge = ' <span class="badge badge-stable">노이즈</span>'
+    elif signal_type == "시그널":
+        signal_badge = ' <span class="badge badge-up">시그널</span>'
+    threat_html = f'<span class="badge {threat_class}">위협도 {threat_score}/10</span>{signal_badge}' if threat_score else ""
 
     # 링크
     links = []
@@ -188,7 +206,7 @@ def _build_competitor_card(comp: dict) -> str:
                 neg_pct = sentiment["negative"] / total * 100
                 sentiment_html += f'''
                 <div style="font-size:12px;color:#94a3b8;margin-top:8px;">
-                    {app.get("platform","")} 리뷰 감성 (평균 ⭐{sentiment.get("avg_rating", 0)})
+                    {html.escape(app.get("platform",""))} 리뷰 감성 (평균 ⭐{sentiment.get("avg_rating", 0)})
                     <div class="sentiment-bar">
                         <div class="sentiment-pos" style="width:{pos_pct}%"></div>
                         <div class="sentiment-neu" style="width:{neu_pct}%"></div>
@@ -199,7 +217,7 @@ def _build_competitor_card(comp: dict) -> str:
     region_emoji = "🇰🇷" if region == "domestic" else "🌏"
 
     return f'''
-    <div class="card comp-card" data-region="{region}">
+    <div class="card comp-card" data-region="{html.escape(region)}">
       <h2>{region_emoji} {name} {threat_html}</h2>
       <div style="color:#94a3b8;font-size:13px;margin-bottom:12px;">{summary}</div>
       <div style="margin-bottom:12px;">{links_html}</div>
@@ -222,10 +240,10 @@ def _build_trend_table(trend: dict) -> str:
 
         version_info = ""
         for vc in t.get("version_changes", []):
-            version_info += f'<div class="tag">{vc}</div>'
+            version_info += f'<div class="tag">{html.escape(vc)}</div>'
 
         rows += f'''<tr>
-            <td><strong>{name}</strong></td>
+            <td><strong>{html.escape(name)}</strong></td>
             <td>{t.get("current_total", 0)}건</td>
             <td>{t.get("previous_total", 0)}건</td>
             <td><span class="badge {badge_class}">{arrow} {diff_text}</span></td>
@@ -289,12 +307,225 @@ def _build_suggestions_table(suggestions: list[dict]) -> str:
     </table>'''
 
 
+def _build_executive_summary(exec_summary: dict) -> str:
+    """Executive Summary HTML을 생성합니다."""
+    if not exec_summary or not exec_summary.get("headline"):
+        return ""
+
+    risk_level = exec_summary.get("risk_level", "낮음")
+    risk_class = {"높음": "badge-high", "보통": "badge-mid", "낮음": "badge-low"}.get(risk_level, "badge-stable")
+
+    threats_html = ""
+    for t in exec_summary.get("top_threats", []):
+        urgency = html.escape(t.get("urgency", ""))
+        urgency_class = "badge-high" if urgency == "즉시대응" else ("badge-mid" if urgency == "주시" else "badge-low")
+        threats_html += f'''<tr>
+            <td><strong>{html.escape(t.get("competitor", ""))}</strong></td>
+            <td>{html.escape(t.get("action", ""))}</td>
+            <td>{html.escape(t.get("impact", ""))}</td>
+            <td><span class="badge {urgency_class}">{urgency}</span></td>
+        </tr>'''
+
+    opps_html = ""
+    for o in exec_summary.get("opportunities", []):
+        opps_html += f'''<tr>
+            <td><strong>{html.escape(o.get("area", ""))}</strong></td>
+            <td>{html.escape(o.get("description", ""))}</td>
+            <td style="color:#38bdf8">{html.escape(o.get("action", ""))}</td>
+        </tr>'''
+
+    threats_table = f'''<table>
+        <tr><th>경쟁사</th><th>동향</th><th>유심사 영향</th><th>긴급도</th></tr>
+        {threats_html}
+    </table>''' if threats_html else ""
+
+    opps_table = f'''<h3 style="margin-top:16px">💡 기회 포착</h3>
+    <table>
+        <tr><th>영역</th><th>설명</th><th>권장 액션</th></tr>
+        {opps_html}
+    </table>''' if opps_html else ""
+
+    return f'''
+    <div class="section">
+      <div class="section-title">🎯 Executive Summary</div>
+      <div class="card">
+        <h2 style="margin-bottom:12px">{html.escape(exec_summary.get("headline", ""))}</h2>
+        <div style="margin-bottom:16px">
+          경쟁 위험도: <span class="badge {risk_class}">{html.escape(risk_level)}</span>
+          <span style="color:#94a3b8;margin-left:8px">{html.escape(exec_summary.get("risk_reason", ""))}</span>
+        </div>
+        {threats_table}
+        {opps_table}
+      </div>
+    </div>'''
+
+
+def _build_rating_trend_section(rating_history: dict[str, list[dict]]) -> str:
+    """앱 평점 추이 테이블 HTML을 생성합니다."""
+    if not rating_history:
+        return ""
+
+    # 날짜 목록 수집
+    all_dates = set()
+    for entries in rating_history.values():
+        for e in entries:
+            all_dates.add(e["date"])
+    dates = sorted(all_dates)[-8:]  # 최근 8주
+
+    if len(dates) < 2:
+        return ""
+
+    date_headers = "".join(f"<th>{d[5:]}</th>" for d in dates)  # MM-DD 형식
+
+    rows = ""
+    for name, entries in sorted(rating_history.items()):
+        date_map = {e["date"]: e for e in entries}
+        cells = ""
+        prev_rating = None
+        for d in dates:
+            entry = date_map.get(d, {})
+            ios = entry.get("iOS", 0)
+            android = entry.get("Android", 0)
+            rating = ios or android
+            if rating:
+                # 변동 표시
+                if prev_rating and rating != prev_rating:
+                    diff = rating - prev_rating
+                    color = "#22c55e" if diff > 0 else "#ef4444"
+                    arrow = "↑" if diff > 0 else "↓"
+                    cells += f'<td style="color:{color}">{rating:.1f} {arrow}</td>'
+                else:
+                    cells += f"<td>{rating:.1f}</td>"
+                prev_rating = rating
+            else:
+                cells += "<td style='color:#475569'>-</td>"
+
+        rows += f"<tr><td><strong>{html.escape(name)}</strong></td>{cells}</tr>"
+
+    return f'''
+    <div class="section">
+      <div class="section-title">📈 앱 평점 추이 (주간)</div>
+      <div class="card">
+        <table>
+          <tr><th>경쟁사</th>{date_headers}</tr>
+          {rows}
+        </table>
+      </div>
+    </div>'''
+
+
+def _build_release_velocity_section(release_history: dict[str, list[dict]]) -> str:
+    """기능 출시 속도 비교 테이블 HTML을 생성합니다."""
+    if not release_history:
+        return ""
+
+    # 경쟁사별 통계 계산
+    stats = []
+    for name, entries in release_history.items():
+        total_releases = sum(e.get("total", 0) for e in entries)
+        weeks = len(entries) or 1
+        avg_per_week = total_releases / weeks
+        total_ux = sum(e.get("ux_changes", 0) for e in entries)
+        total_feat = sum(e.get("new_features", 0) for e in entries)
+        total_pricing = sum(e.get("pricing", 0) for e in entries)
+
+        # 최근 4주 vs 이전 4주 비교
+        recent = entries[-4:] if len(entries) >= 4 else entries
+        older = entries[-8:-4] if len(entries) >= 8 else []
+        recent_total = sum(e.get("total", 0) for e in recent)
+        older_total = sum(e.get("total", 0) for e in older) if older else recent_total
+
+        if older_total > 0:
+            momentum = ((recent_total - older_total) / older_total) * 100
+        else:
+            momentum = 0
+
+        stats.append({
+            "name": name,
+            "total": total_releases,
+            "avg": avg_per_week,
+            "ux": total_ux,
+            "feat": total_feat,
+            "pricing": total_pricing,
+            "weeks": weeks,
+            "momentum": momentum,
+        })
+
+    # 활동량 기준 정렬
+    stats.sort(key=lambda x: x["total"], reverse=True)
+
+    rows = ""
+    for s in stats:
+        momentum = s["momentum"]
+        if momentum > 20:
+            mom_badge = '<span class="badge badge-up">가속 ↑</span>'
+        elif momentum < -20:
+            mom_badge = '<span class="badge badge-down">감속 ↓</span>'
+        else:
+            mom_badge = '<span class="badge badge-stable">유지 →</span>'
+
+        rows += f'''<tr>
+            <td><strong>{html.escape(s["name"])}</strong></td>
+            <td>{s["total"]}건 / {s["weeks"]}주</td>
+            <td>{s["avg"]:.1f}건/주</td>
+            <td>{s["ux"]}</td>
+            <td>{s["feat"]}</td>
+            <td>{s["pricing"]}</td>
+            <td>{mom_badge}</td>
+        </tr>'''
+
+    return f'''
+    <div class="section">
+      <div class="section-title">🚀 기능 출시 속도 비교</div>
+      <div class="card">
+        <table>
+          <tr><th>경쟁사</th><th>총 활동</th><th>주간 평균</th><th>UX</th><th>기능</th><th>요금</th><th>모멘텀</th></tr>
+          {rows}
+        </table>
+        <div style="color:#64748b;font-size:11px;margin-top:8px">
+          모멘텀: 최근 4주 vs 이전 4주 활동량 비교 (±20% 이상 변동 시 표시)
+        </div>
+      </div>
+    </div>'''
+
+
+def _build_price_changes_section(price_changes: list[dict]) -> str:
+    """가격 변동 섹션 HTML을 생성합니다."""
+    if not price_changes:
+        return ""
+
+    rows = ""
+    for c in price_changes:
+        rows += f'''<tr>
+            <td><strong>{html.escape(c.get("competitor", ""))}</strong></td>
+            <td>{html.escape(c.get("destination", ""))}</td>
+            <td>{html.escape(c.get("data", ""))} / {html.escape(c.get("duration", ""))}</td>
+            <td style="text-decoration:line-through;color:#64748b">{html.escape(str(c.get("previous_price", "")))} {html.escape(c.get("currency", ""))}</td>
+            <td style="color:#fbbf24;font-weight:600">{html.escape(str(c.get("current_price", "")))} {html.escape(c.get("currency", ""))}</td>
+        </tr>'''
+
+    return f'''
+    <div class="section">
+      <div class="section-title">⚡ 가격 변동 감지</div>
+      <div class="card">
+        <table>
+          <tr><th>서비스</th><th>여행지</th><th>요금제</th><th>이전 가격</th><th>현재 가격</th></tr>
+          {rows}
+        </table>
+      </div>
+    </div>'''
+
+
 def generate_dashboard(
     analyses: list[dict],
     suggestions: list[dict],
     backend: str,
     trend: dict = None,
     output_dir: str = "reports",
+    executive_summary: dict = None,
+    price_changes: list[dict] = None,
+    rating_history: dict = None,
+    release_history: dict = None,
 ) -> str:
     """HTML 대시보드를 생성합니다."""
     now = datetime.now()
@@ -321,6 +552,10 @@ def generate_dashboard(
     html_output = html_output.replace("__TREND_TABLE__", _build_trend_table(trend or {}))
     html_output = html_output.replace("__APP_TABLE__", _build_app_table(analyses))
     html_output = html_output.replace("__SUGGESTIONS_TABLE__", _build_suggestions_table(suggestions))
+    html_output = html_output.replace("__EXECUTIVE_SUMMARY__", _build_executive_summary(executive_summary or {}))
+    html_output = html_output.replace("__PRICE_CHANGES_SECTION__", _build_price_changes_section(price_changes or []))
+    html_output = html_output.replace("__RATING_TREND_SECTION__", _build_rating_trend_section(rating_history or {}))
+    html_output = html_output.replace("__RELEASE_VELOCITY_SECTION__", _build_release_velocity_section(release_history or {}))
 
     # 저장
     output_path = Path(output_dir)
