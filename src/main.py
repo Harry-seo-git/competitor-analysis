@@ -2,12 +2,16 @@
 
 import argparse
 import logging
+import os
 import sys
 import time
 from pathlib import Path
 
 # 프로젝트 루트 디렉토리 기준으로 경로 설정
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# Render 환경 감지 (render.yaml에서 RENDER=true 설정)
+IS_RENDER = os.environ.get("RENDER", "").lower() == "true"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -35,6 +39,8 @@ logger = logging.getLogger(__name__)
 def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
     """경쟁사 분석을 실행하고 리포트를 생성합니다."""
     logger.info("=== 유심사 경쟁사 분석 시작 ===")
+    if IS_RENDER:
+        logger.info("Render 환경 감지 - 파일 저장은 임시이며 재배포 시 초기화됩니다.")
 
     # 1. 설정 로드
     if config_path is None:
@@ -101,7 +107,10 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
 
     # 7. 트렌드 비교 (이전 주 대비)
     trend = compare_with_previous(all_analyses, previous_history)
-    save_history(all_analyses, history_dir)
+    try:
+        save_history(all_analyses, history_dir)
+    except OSError as e:
+        logger.warning(f"히스토리 저장 실패 (Render 환경에서는 정상): {e}")
 
     # 8. 요금제 비교 수집 + 가격 변동 감지
     logger.info("=== 요금제 정보 수집 ===")
@@ -116,18 +125,25 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
         executive_summary=executive_summary,
     )
     reports_dir = str(PROJECT_ROOT / "reports")
-    report_path = save_report(report, output_dir=reports_dir)
-    logger.info(f"리포트 생성 완료: {report_path}")
+    report_path = None
+    try:
+        report_path = save_report(report, output_dir=reports_dir)
+        logger.info(f"리포트 생성 완료: {report_path}")
+    except OSError as e:
+        logger.warning(f"리포트 파일 저장 실패 (Slack 전송은 계속 진행): {e}")
 
     # 10. 대시보드 생성
     rating_history, release_history = load_trend_histories(history_dir)
-    dashboard_path = generate_dashboard(
-        all_analyses, suggestions, backend,
-        trend=trend, output_dir=reports_dir,
-        executive_summary=executive_summary, price_changes=price_changes,
-        rating_history=rating_history, release_history=release_history,
-    )
-    logger.info(f"대시보드 생성 완료: {dashboard_path}")
+    try:
+        dashboard_path = generate_dashboard(
+            all_analyses, suggestions, backend,
+            trend=trend, output_dir=reports_dir,
+            executive_summary=executive_summary, price_changes=price_changes,
+            rating_history=rating_history, release_history=release_history,
+        )
+        logger.info(f"대시보드 생성 완료: {dashboard_path}")
+    except OSError as e:
+        logger.warning(f"대시보드 파일 저장 실패 (Slack 전송은 계속 진행): {e}")
 
     # 11. Slack 전송
     if not skip_slack:
@@ -142,7 +158,7 @@ def run_analysis(config_path: str = None, skip_slack: bool = False) -> str:
             logger.warning("Slack 전송 실패 - 리포트 파일은 저장되었습니다.")
 
     logger.info("=== 경쟁사 분석 완료 ===")
-    return report_path
+    return report_path or "리포트 생성 완료 (파일 저장 생략)"
 
 
 def main():

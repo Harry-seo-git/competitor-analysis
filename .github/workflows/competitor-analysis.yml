@@ -1,10 +1,11 @@
-name: 유심사 경쟁사 주간 분석
+name: 유심사 경쟁사 주간 분석 (비활성 - Render로 이전)
 
+# [비활성] Render Cron Job으로 이전됨 (render.yaml 참조)
+# 필요 시 workflow_dispatch로 수동 실행은 가능합니다.
 on:
-  schedule:
-    # 매주 월요일 오전 9시 30분 KST (UTC 00:30)
-    - cron: '30 0 * * 1'
-  workflow_dispatch:  # 수동 실행 가능
+  # schedule:
+  #   - cron: '30 0 * * 1'
+  workflow_dispatch:  # 수동 실행만 가능
 
 jobs:
   analyze:
@@ -43,10 +44,11 @@ jobs:
             reports/*.html
           retention-days: 90
 
-      - name: Commit report and data to repository
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add reports/ data/
-          git diff --staged --quiet || git commit -m "chore: add weekly competitor report $(date +'%Y-%m-%d')"
-          git push
+      # [비활성] Render 환경에서는 git push 불필요 (Slack 전송으로 대체)
+      # - name: Commit report and data to repository
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add reports/ data/
+      #     git diff --staged --quiet || git commit -m "chore: add weekly competitor report $(date +'%Y-%m-%d')"
+      #     git push

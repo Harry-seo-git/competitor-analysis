@@ -177,10 +177,13 @@ def collect_pricing(competitors: list[dict]) -> dict[str, list[dict]]:
 
 def _save_pricing_data(pricing: dict) -> None:
     """요금 데이터를 파일로 저장합니다."""
-    PRICING_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    filename = f"pricing_{datetime.now().strftime('%Y%m%d')}.json"
-    filepath = PRICING_DATA_DIR / filename
-    filepath.write_text(json.dumps(pricing, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        PRICING_DATA_DIR.mkdir(parents=True, exist_ok=True)
+        filename = f"pricing_{datetime.now().strftime('%Y%m%d')}.json"
+        filepath = PRICING_DATA_DIR / filename
+        filepath.write_text(json.dumps(pricing, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError as e:
+        logger.warning(f"요금 데이터 저장 실패: {e}")
 
 
 def _load_previous_pricing() -> dict:

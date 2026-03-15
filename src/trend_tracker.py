@@ -44,7 +44,11 @@ def load_previous_urls(history: list[dict]) -> set[str]:
 
 
 def save_history(analyses: list[dict], history_dir: str) -> None:
-    """현재 분석 결과를 히스토리로 저장합니다."""
+    """현재 분석 결과를 히스토리로 저장합니다.
+
+    Raises:
+        OSError: 디렉토리 생성 또는 파일 쓰기 실패 시
+    """
     history_path = Path(history_dir)
     history_path.mkdir(parents=True, exist_ok=True)
 
@@ -89,10 +93,13 @@ def save_history(analyses: list[dict], history_dir: str) -> None:
     logger.info(f"히스토리 저장: {filepath}")
 
     # 오래된 히스토리 정리 (최근 12주만 유지)
-    files = sorted(history_path.glob("analysis_*.json"), reverse=True)
-    for old_file in files[12:]:
-        old_file.unlink()
-        logger.info(f"오래된 히스토리 삭제: {old_file.name}")
+    try:
+        files = sorted(history_path.glob("analysis_*.json"), reverse=True)
+        for old_file in files[12:]:
+            old_file.unlink()
+            logger.info(f"오래된 히스토리 삭제: {old_file.name}")
+    except OSError as e:
+        logger.warning(f"오래된 히스토리 정리 실패: {e}")
 
 
 def load_trend_histories(history_dir: str, weeks: int = 12) -> tuple[dict[str, list[dict]], dict[str, list[dict]]]:
