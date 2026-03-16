@@ -15,6 +15,52 @@ logger = logging.getLogger(__name__)
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
+# 최신 모델 캐시 (파이프라인 실행 중 한 번만 조회)
+_cached_model_id: str | None = None
+
+
+def get_latest_sonnet_model() -> str:
+    """Anthropic API에서 최신 Sonnet 모델 ID를 자동 감지합니다."""
+    global _cached_model_id
+    if _cached_model_id:
+        return _cached_model_id
+
+    fallback = "claude-sonnet-4-6"
+
+    if not ANTHROPIC_API_KEY:
+        _cached_model_id = fallback
+        return fallback
+
+    try:
+        resp = requests.get(
+            "https://api.anthropic.com/v1/models",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        models = resp.json().get("data", [])
+
+        # Sonnet 모델만 필터링 후 ID 기준 내림차순 정렬 (최신이 먼저)
+        sonnet_models = sorted(
+            [m["id"] for m in models if "sonnet" in m.get("id", "")],
+            reverse=True,
+        )
+
+        if sonnet_models:
+            _cached_model_id = sonnet_models[0]
+            logger.info(f"최신 Sonnet 모델 감지: {_cached_model_id}")
+        else:
+            _cached_model_id = fallback
+            logger.warning(f"Sonnet 모델을 찾을 수 없어 폴백 사용: {fallback}")
+    except Exception as e:
+        _cached_model_id = fallback
+        logger.warning(f"모델 목록 조회 실패, 폴백 사용 ({fallback}): {e}")
+
+    return _cached_model_id
+
 ANALYSIS_PROMPT = """당신은 eSIM/로밍 서비스 '유심사'의 경쟁 전략 분석가입니다.
 아래는 '{competitor_name}' 경쟁사에 대한 최근 웹 검색 결과와 페이지 내용입니다.
 
@@ -233,7 +279,7 @@ def _call_claude(prompt: str) -> str:
                 "anthropic-version": "2023-06-01",
             },
             json={
-                "model": "claude-sonnet-4-6",
+                "model": get_latest_sonnet_model(),
                 "max_tokens": 2048,
                 "messages": [{"role": "user", "content": prompt}],
             },
