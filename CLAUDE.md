@@ -33,7 +33,7 @@ reports/               # 생성된 리포트(.md) 및 대시보드(.html)
 ```
 
 ## 경쟁사 목록
-- 국내: 로밍도깨비, 도시락eSIM, 플릿, 이심이지
+- 국내: 로밍도깨비, 도시락eSIM, 플릿, 이심이지, 모비
 - 해외: Saily, Holafly, Airalo, Nomad
 
 ## 실행
