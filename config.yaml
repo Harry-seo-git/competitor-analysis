@@ -25,6 +25,26 @@ competitors:
       app_store: "https://apps.apple.com/kr/app/id1628484156"
       play_store: "https://play.google.com/store/apps/details?id=com.baycon.android.esim"
       keywords: ["이심이지 eSIM", "이심이지 업데이트", "esimeasy eSIM"]
+    - name: "모비"
+      url: "https://mobiesim.co.kr/"
+      app_store: "https://apps.apple.com/kr/app/id6756096473"
+      play_store: "https://play.google.com/store/apps/details?id=com.kt.mobi"
+      keywords: ["모비 eSIM", "모비 로밍", "모비 업데이트"]
+    - name: "말톡"
+      url: "https://store.maaltalk.com/"
+      app_store: "https://apps.apple.com/kr/app/id6470261161"
+      play_store: "https://play.google.com/store/apps/details?id=com.maaltalk.now"
+      keywords: ["말톡 eSIM", "말톡 로밍", "말톡 업데이트"]
+    - name: "핀다이렉트"
+      url: "https://www.pindirectshop.com/"
+      app_store: "https://apps.apple.com/kr/app/id6444324739"
+      play_store: "https://play.google.com/store/apps/details?id=com.stagefive.pindirectshop"
+      keywords: ["핀다이렉트 eSIM", "핀다이렉트 로밍", "핀다이렉트 업데이트"]
+    - name: "커비이심"
+      url: "https://www.cubiesim.com/"
+      app_store: "https://apps.apple.com/kr/app/id6484069208"
+      play_store: "https://play.google.com/store/apps/details?id=com.cubitrip.cubiesimaos"
+      keywords: ["커비이심 eSIM", "커비이심 로밍", "cubiesim 업데이트"]
 
   international:
     - name: "Saily"

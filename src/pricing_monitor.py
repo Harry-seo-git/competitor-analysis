@@ -15,7 +15,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
-from llm_analyzer import ANTHROPIC_API_KEY, _parse_json_response
+from llm_analyzer import ANTHROPIC_API_KEY, _parse_json_response, get_latest_sonnet_model
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ def _extract_pricing_batch_with_claude(batch: dict[str, str]) -> dict[str, list[
                 "anthropic-version": "2023-06-01",
             },
             json={
-                "model": "claude-sonnet-4-6-20250514",
+                "model": get_latest_sonnet_model(),
                 "max_tokens": 4096,
                 "messages": [{"role": "user", "content": prompt}],
             },
