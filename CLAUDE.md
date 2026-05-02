@@ -8,7 +8,7 @@ eSIM/로밍 서비스 "유심사"의 경쟁사를 주간 자동 분석하는 Pyt
 - Python (requests, beautifulsoup4, pyyaml, jinja2)
 - LLM: Claude API (분석 엔진)
 - 검색: SerpAPI / Google CSE / 스크래핑 폴백
-- CI: GitHub Actions (매주 월요일 09:30 KST)
+- 배포: Render Cron Job (매주 월요일 09:30 KST)
 - 알림: Slack Webhook
 
 ## 프로젝트 구조
