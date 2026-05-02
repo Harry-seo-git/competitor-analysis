@@ -84,3 +84,7 @@ python src/main.py --skip-slack
 - **검색**: SerpAPI / Google CSE / 스크래핑 폴백
 - **배포**: Render Cron Job
 - **알림**: Slack Webhook (Block Kit)
+
+## 라이선스
+
+MIT License. See [LICENSE](LICENSE) for details.
