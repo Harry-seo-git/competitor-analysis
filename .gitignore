@@ -9,3 +9,12 @@ build/
 venv/
 *.log
 .DS_Store
+
+# 생성된 리포트/대시보드 (런타임 생성물)
+reports/*.md
+reports/*.html
+
+# 런타임 데이터
+data/history/
+data/pricing/
+data/snapshots/
